@@ -1,38 +1,34 @@
-from re import A
-import tkinter as tk
-from tkinter import ttk
-from matplotlib.backends.backend_agg import FigureCanvasAgg
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-import matplotlib.gridspec as gridspec
 from scipy.spatial.transform import Rotation
+
 from functools import partial
+from typing import Optional
 
-import Satellite
-import Controller
-from parameters import *
+from attitude_frame import TimeParameters, PlotParameters
+from satellite import Satellite
+from reference import BaseReference
+from controller import Controller, PDController, SMCController
+from simulation import PhysicalState, Simulate
 
-class AttitudeAnimation:
+
+class AttitudeSimulation:
     def __init__(self, 
-                 sat: Satellite.Satellite,
-                 ref: ReferenceParameters,
-                 controller: Controller.Controller,
-                 parameters_ani=None, 
+                 sat:Optional[Satellite]=None,
+                 ref: Optional[BaseReference]=None,
+                 controller: Optional[Controller]=None,
+                 parameters_ani=None,
                  parameters_plt=None) -> None:
 
-        self.sat: Satellite.Satellite = sat
-        self.ref: ReferenceParameters = ref
-        self.controller: Controller.Controller = controller
+        self.sat: Satellite = Satellite() if sat is None else sat
+        self.ref: BaseReference = BaseReference() if ref is None else ref
+        self.controller: Controller = PDController() if controller is None else controller
+        self.parameters_animation: TimeParameters = TimeParameters() if parameters_ani is None else parameters_ani
+        self.parameters_plot = PlotParameters() if parameters_plt is None else parameters_plt
 
-        self.load_animation_parameters(parameters_ani)
-        self.load_plot_parameters(parameters_plt)
-
-        # self.data = {'time': np.zeros([int((self.parameters_animation.T_stop - 
-                                            # self.parameters_animation.T0))])}
-        self.data = {'time': np.arange(self.parameters_animation.T0, 
-                                       self.parameters_animation.T_stop,
+        self.data = {'time': np.arange(self.parameters_animation.t0, 
+                                       self.parameters_animation.t_end,
                                        self.parameters_animation.dt)}
         self.data['ref'] = np.zeros_like(self.data['time'])
 
@@ -65,12 +61,19 @@ class AttitudeAnimation:
 
 
     def load_animation_parameters(self, parameters=None):
-        self.parameters_animation: AnimationParameters = AnimationParameters()                if parameters is None else parameters
+        if parameters is None:
+            self.parameters_animation: TimeParameters = TimeParameters() 
+        else:
+            self.parameters_animation: TimeParameters = parameters
 
 
     def load_plot_parameters(self, parameters=None):
         self.parameters_plot = PlotParameters() if parameters is \
                                     None else parameters
+
+
+    def load_controller_parameters(self, parameters=None):
+        self.controller.load_params(parameters)
 
 
     def init(self):
@@ -94,9 +97,9 @@ class AttitudeAnimation:
                                 alpha=self.parameters_plot.alpha)
             self.axes_ref.append(line_ref)
 
-        self.ax.set_xlim((-1.5, 1.5))
-        self.ax.set_ylim((-1.5, 1.5))
-        self.ax.set_zlim((-1.5, 1.5))
+        self.ax.set_xlim((-1.0, 1.0))
+        self.ax.set_ylim((-1.0, 1.0))
+        self.ax.set_zlim((-1.0, 1.0))
 
         # Set the labes of the plot
         self.ax.set_xlabel("x-axis")
@@ -107,7 +110,7 @@ class AttitudeAnimation:
 
 
     def draw_ref(self):
-        R = self.ref.rot.as_matrix()
+        R = self.ref.state.rot.as_matrix()
         for i in range(3):
             self.axes_ref[i].set_data([0.0, R[0, i]], [0.0, R[1, i]])
             self.axes_ref[i].set_3d_properties([0.0, R[2, i]])
@@ -121,13 +124,18 @@ class AttitudeAnimation:
 
 
     def update(self, frame):
-        L = self.controller.output(self.sat.state, self.ref)
-        self.sat.update_attitude(L=L, dt=self.parameters_animation.dt)
+        # Calculate
+        L = self.controller.output(self.sat.state, self.ref.state, J=self.sat.J)
+        self.sat.state = Simulate.update_state(L,
+                                               self.sat.state,
+                                               self.sat.J,
+                                               self.parameters_animation.dt)
+        self.ref.update(self.parameters_animation.dt)
 
+        # Draw
         self.draw_satellite()
         if self.parameters_plot.reference:
             self.draw_ref()
-
         return self.axes + self.axes_ref
 
 
@@ -141,83 +149,37 @@ class AttitudeAnimation:
             line.set_3d_properties([])
 
 
-class SimulationFrame(tk.Frame):
-    def __init__(self, 
-                 parent,
-                 anim_obj: AttitudeAnimation):
-
-        super().__init__(parent)
-        self.anim_obj = anim_obj
-
-        self.canvas = FigureCanvasTkAgg(self.anim_obj.fig, master=self)
-        self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-
-        controls = tk.Frame(self)
-        controls.pack(side=tk.BOTTOM, fill=tk.X)
-
-        self.start_btn = tk.Button(controls, text="Start", command=self.start)
-        self.start_btn.pack(side=tk.LEFT)
-
-        self.stop_btn = tk.Button(controls, text="Stop", command=self.stop)
-        self.stop_btn.pack(side=tk.LEFT)
-
-        self.reset_btn = tk.Button(controls, text="Reset", command=self.reset)
-        self.reset_btn.pack(side=tk.LEFT)
-
-        self.running = True
-
-
-    def start(self):
-        if not self.running:
-            self.running = True
-        self.anim_obj.animation.resume()
-
-
-    def stop(self):
-        if self.running:
-            self.running = False
-        self.anim_obj.animation.pause()
-
-
-    def reset(self):
-        self.stop()
-        self.anim_obj.sat.reset()
-        self.anim_obj.flush_plot()
-        self.canvas.draw_idle()
-        self.anim_obj.init()
-        self.anim_obj.draw_satellite()
-        if self.anim_obj.parameters_animation.reference:
-            self.anim_obj.draw_ref()
-        self.canvas.draw_idle()
-
-
 def test_parameters_sat():
     rot = Rotation.from_quat([0, 0, np.sin(np.pi/4), np.cos(np.pi/4)])
-    param_sat = Satellite.Satellite_State(
-        # rot=rot,
+    sat_param = PhysicalState(
+        rot=rot,
         w=np.zeros(3),
         w_dot=np.zeros(3),
     )
-    param_ref = ReferenceParameters(
+    ref_param = PhysicalState(
         rot=rot,
-        W=np.zeros(3),
-        W_dot=np.zeros(3)
+        # w=np.zeros(3),
+        w=np.ones(3) * 1.2,
+        w_dot=np.zeros(3)
     )
 
-    sat = Satellite.Satellite()
-    sat.load_satellite_parameters(param_sat)
-    controller = Controller.PDController()
-    return sat, param_ref, controller
+    ref = BaseReference()
+    ref.state = ref_param
+
+    sat = Satellite()
+    sat.load_satellite_parameters(sat_param)
+
+    # controller = PDController()
+    controller = SMCController()
+    return sat, ref, controller
 
 
 def create_test_parameters():
-    param_ani = AnimationParameters(
-        T0=0.0,
-        T_stop= 20.0,
+    param_ani = TimeParameters(
+        t0=0.0,
+        t_end= 20.0,
         dt= 0.05,
         interval=50,
-        animation_file_path="Simulations/animation.gif",
-        plot_file_path="Plots/simulation.pdf"
     )
 
     param_plt = PlotParameters(
@@ -230,34 +192,19 @@ def create_test_parameters():
     return param_ani, param_plt
 
 
-def create_test_animation():
-    anim = AttitudeAnimation(*test_parameters_sat(), *create_test_parameters())
+def create_simulation():
+    anim = AttitudeSimulation(*test_parameters_sat(), *create_test_parameters())
     return anim
 
 
-def test_3d_animation():
-    anim = create_test_animation()
+def test_animation():
+    anim = create_simulation()
     print(f"Satellite quaternion: {anim.sat.state.rot.as_quat()}")
-    print(f"Reference quaternion: {anim.ref.rot.as_quat()}")
+    print(f"Reference quaternion: {anim.ref.state.rot.as_quat()}")
     print("-----------------------------------------------------------------------")
     plt.show()
 
 
-def close_app(root):
-    plt.close("all")
-    root.destroy()
-
-
-def test_page():
-    root = tk.Tk()
-    root.title("Test of simulation frame")
-    sim_page = SimulationFrame(root, create_test_animation())
-    sim_page.pack(fill="both", expand=True)
-    root.protocol("WM_DELETE_WINDOW", lambda: close_app(root))
-    root.mainloop()
-
-
 if __name__ == '__main__':
-    # test_3d_animation()
-    test_page()
+    test_animation()
 
