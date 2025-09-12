@@ -32,6 +32,9 @@ class SimulationFrame(tk.Frame):
         self.reset_btn = tk.Button(controls, text="Reset", command=self.reset)
         self.reset_btn.pack(side=tk.LEFT)
 
+        self.randomize_btn = tk.Button(controls, text="Randomize", command=self.randomize)
+        self.randomize_btn.pack(side=tk.LEFT)
+
         self.reference = tk.IntVar(value=1)
         self.reference_btn = tk.Checkbutton(controls,
                                             text="Reference",
@@ -92,6 +95,12 @@ class SimulationFrame(tk.Frame):
         if self.running:
             self.running = False
         self.anim_obj.animation.pause()
+
+
+    def randomize(self):
+        self.anim_obj.sat.state.randomize_attitude()
+        self.anim_obj.ref.state.randomize_attitude()
+        self.reset()
 
 
     def reset(self):

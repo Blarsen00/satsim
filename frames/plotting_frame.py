@@ -1,7 +1,8 @@
 import tkinter as tk
 
-from attitude_frame import TimeParameters
-from base_frame import BaseParamFrame
+from frames.attitude_frame import TimeParameters
+from frames.base_frame import BaseParamFrame
+
 from misc import test_page
 
 

@@ -8,13 +8,8 @@ from typing import List
 
 @dataclass
 class PDParameters:
-    px: float = 1.0
-    py: float = 1.0
-    pz: float = 1.0
-
-    dx: float = 1.0
-    dy: float = 1.0
-    dz: float = 1.0
+    p: List[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
+    d: List[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
 
 
 @dataclass
@@ -73,16 +68,19 @@ class PDController(Controller):
         wc = ref.w
         q = state.rot.as_quat()
         w = state.w
-        p = np.array([self.param.px, self.param.py, self.param.pz])
-        d = np.array([self.param.dx, self.param.dy, self.param.dz])
+        p = np.array(self.param.p)
+        d = np.array(self.param.d)
 
-        qe = misc.quat_multiply(qc, misc.quat_conjugate(q))
-        # qe = misc.quat_multiply(misc.quat_conjugate(q), qc)
+        # qe = misc.quat_multiply(qc, misc.quat_conjugate(q))
+        qe = misc.quat_multiply(misc.quat_conjugate(q), qc)
         qvec = qe[:-1]
         we = w - wc
+        # we = wc - w
 
+        # L = - np.sign(qe[-1]) *  p * qvec - d * we
         L = np.sign(qe[-1]) *  p * qvec - d * we
         # L = - p * qvec - d * we
+        # L = - p * qvec - d * w
         return L
 
 

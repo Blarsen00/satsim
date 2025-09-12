@@ -1,20 +1,20 @@
 import tkinter as tk
 import matplotlib.pyplot as plt
 
-# Calculate
-from attitude import AttitudeSimulation, create_simulation
-from attitude_frame import TimeParameters
-from controller import Controller, PDController
-from reference import BaseReference
-from satellite import Satellite
+# Simulation
+from attitude import create_simulation
+from simulation import PhysicalState
+# from controller import Controller, PDController
+# from reference import BaseReference
+# from satellite import Satellite
 
 # Frames
-from base_frame import BaseParamFrame
-from simulation import PhysicalState
-from simulation_frame import SimulationFrame
-from reference_frame import ReferenceFrame
-from controller_frame import ControllerFrame
-from plotting_frame import AniParamFrame
+from frames.base_frame import BaseParamFrame
+from frames.attitude_frame import TimeParameters
+from frames.simulation_frame import SimulationFrame
+from frames.reference_frame import ReferenceFrame
+from frames.controller_frame import ControllerFrame
+from frames.plotting_frame import AniParamFrame
 
 
 class App(tk.Tk):
@@ -75,6 +75,7 @@ class App(tk.Tk):
     def update_params(self):
         self.ani_obj.load_animation_parameters(self.frames["Params"].param)
         self.ani_obj.controller = self.frames["Controller"].get_controller()
+        self.ani_obj.ref = self.frames["Reference"].get_reference()
         print(f"Selected Controller: {self.ani_obj.controller.param}")
 
 

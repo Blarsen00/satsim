@@ -12,6 +12,11 @@ class BaseReference:
             self.state = PhysicalState()
 
 
+    @staticmethod
+    def get_reference(param: PhysicalState):
+        return BaseReference(param)
+
+
     def update(self, dt: float):
         """
             Update the reference state for each time step.

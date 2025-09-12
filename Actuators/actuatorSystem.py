@@ -1,7 +1,7 @@
 import numpy as np
-from Actuator import Actuator
-from Reactionwheel import ReactionWheel
-from Magnetorquer import Magnetorquer
+from actuator import Actuator
+from reactionwheel import ReactionWheel
+from magnetorquer import Magnetorquer
 from typing import List
 
 

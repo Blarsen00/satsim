@@ -2,12 +2,13 @@ import tkinter as tk
 from tkinter import ttk
 from abc import abstractmethod
 from dataclasses import dataclass, field, fields, is_dataclass
+from typing import List
 
 
 class BaseParamFrame(tk.Frame):
     base_width: int = 15
-    base_padding_x: int = 5
-    base_padding_y: int = 2
+    base_padding_x: int = 1
+    base_padding_y: int = 1
     base_entry_width: int = 10
 
     def __init__(self, parent, param=None):
@@ -101,22 +102,48 @@ class BaseParamFrame(tk.Frame):
         div.pack(side="top", fill="x", pady=2)
 
 
-    def add_field(self, text: str, text_var: tk.StringVar) -> tk.Entry:
+    def add_field(self, text: str, text_var: tk.StringVar) -> None:
         """
             Adds a simple Text and Entry row to the frame.
             Entry Text: [    ]
         """
+        return self.add_list_field(text, [text_var])
+
+
+    def add_list_field(self, text: str, text_var: List[tk.StringVar]) -> None:
         row = tk.Frame(self.canvas)
         row.pack(side="top",
                  fill="x",
                  pady=self.base_padding_y,
                  padx=self.base_padding_x)
 
-        label = tk.Label(row, text=text, width=self.base_width, anchor="w")
+        label = tk.Label(row, text=text, width=self.base_width)
         label.pack(side="left",
                    fill="x",
                    padx=self.base_padding_x,
                    pady=self.base_padding_y)
 
-        entry = tk.Entry(row, width=self.base_entry_width, textvariable=text_var)
-        entry.pack(side="left", fill="x")
+        for var in text_var:
+            tk.Entry(row,
+                     width=self.base_entry_width,
+                     textvariable=var).pack(side=tk.LEFT, 
+                                            fill="x",
+                                            pady=self.base_padding_y,
+                                            padx=self.base_padding_x)
+
+
+    def add_array_field(self, text: str, text_vars: List[List[tk.StringVar]]):
+        for i, r in enumerate(text_vars):
+            row = tk.Frame(self.canvas)
+            row.pack(side="top",
+                     fill="x",
+                     pady=self.base_padding_y,
+                     padx=self.base_padding_x)
+
+            txt = ""
+            if i == (len(r) // 2):
+                txt = text
+            self.add_list_field(txt, r)
+
+
+

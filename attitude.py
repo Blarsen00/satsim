@@ -6,7 +6,7 @@ from scipy.spatial.transform import Rotation
 from functools import partial
 from typing import Optional
 
-from attitude_frame import TimeParameters, PlotParameters
+from frames.attitude_frame import TimeParameters, PlotParameters
 from satellite import Satellite
 from reference import BaseReference
 from controller import Controller, PDController, SMCController

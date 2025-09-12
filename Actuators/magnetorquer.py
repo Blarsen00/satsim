@@ -1,7 +1,7 @@
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
-from Actuators.Actuator import Actuator
+from Actuators.actuator import Actuator
 
 
 class Magnetorquer(Actuator):

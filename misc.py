@@ -2,7 +2,7 @@ import numpy as np
 import tkinter as tk
 import matplotlib.pyplot as plt
 
-from base_frame import BaseParamFrame
+from frames.base_frame import BaseParamFrame
 
 
 def skew(v):

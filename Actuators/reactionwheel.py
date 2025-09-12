@@ -1,6 +1,7 @@
 import yaml
 import numpy as np
-from Actuators.Actuator import Actuator
+# from Actuators.actuator import Actuator
+from actuator import Actuator
 import matplotlib.pyplot as plt
 
 def rpm_to_angular_velocity(rpm):

@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 
 from dataclasses import dataclass, field
-from base_frame import BaseParamFrame
+from frames.base_frame import BaseParamFrame
 
 from typing import List
 
