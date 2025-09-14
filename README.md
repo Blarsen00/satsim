@@ -84,7 +84,8 @@ $$
 
 The following plot shows how the torque produced by the reaction wheel relates to the angular velocity of the wheel. It is obvious that as the angular velocity of the wheel increases, the torque the wheel is able to produce diminishes. Once the angular rate matches the limit, then the torque approaches 0. The plot illustrates the importance of desaturation, as the reaction wheels operate at their most efficient, when their angular rate is kept low.
 
-![Torque test plot with max current set to 1.0 A](Simulation_files/torque_test_plot.pdf)
+<!-- ![Torque test plot with max current set to 1.0 A](Simulation_files/torque_test_plot.pdf) -->
+![Torque test plot with max current set to 1.0 A](https://github.com/Blarsen00/satsim/blob/main/Simulation_files/torque_test_plot.pdf)
 
 
 ## Magnetorquers
