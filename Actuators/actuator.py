@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from abc import abstractmethod
 from typing import Optional
 import yaml
@@ -11,15 +12,10 @@ import yaml
 # will calculate the torque the actuator will be capable of provided in the 
 # timeframe dt with reference L.
 
-# PERF: Hello there
-# TODO: Hello there
-# WARNING: Hello there
-# HACK: Hello there
-# FIX: Hello there
-# NOTE: Hello there
-
 
 class Actuator:
+    axis: np.ndarray = np.array([1.0, 0.0, 0.0])
+
     def __init__(self, axis: Optional[np.ndarray]=None) -> None:
         self.axis = np.array([1.0, 0.0, 0.0]) if axis is None else axis
         self.param = {}
@@ -31,63 +27,47 @@ class Actuator:
         file.close()
 
     @abstractmethod
-    def apply_torque(self, L, dt):
+    def apply_torque(self, tau: float, dt: float):
+        """
+            Calculate and return the torque from the actuator
+            provided referece torque.
+        """
         return L
 
     @staticmethod
-    def saturate(value: float, maximum: float, minimum: float):
+    def saturate(value: float,
+                 maximum: Optional[float]=None,
+                 minimum: Optional[float]=None):
+
+        maximum = maximum if maximum is not None else np.infty
+        minimum = minimum if minimum is not None else -np.infty
+
         return min(maximum, max(value, minimum))
 
 
-class ReactionWheel(Actuator):
-    J: np.ndarray = np.eye(3) * 0.01    # Inertia matrix
-    w: float = 0.0                      # Angular velocity
-
-    dv: float = 1.0                     # Coloumb damping coefficient
-    dc: float = 1.0                     # Viscous damping coefficient
-
-    max_rpm: float = 5000.0
-    max_tau: float = 5000.0
-
-    def __init__(self, axis: Optional[np.ndarray] = None) -> None:
-        super().__init__(axis)
-
-
-    @staticmethod
-    def drag(w: float, dc: float, dv: float):
-        """ Wheel friction modeled as a sum of viscous and Coloumb components.
-            (4.55)
-        """
-        return -dv * w - dc * np.sign(w)
-
-    def voltage_to_torque(self, v):
-        # These values will probably change. Ask Christoffer.
-        # implement these values as default parameters in class later?
-
-        G_d = 1
-        K_t = 1
-
-        return min(max(G_d * K_t * v, -self.max_tau), self.max_tau)
-
-    def apply_voltage(self, v, dt):
-        self.apply_torque(self.voltage_to_torque(v), dt)
-
-
 class Magnetorquer(Actuator):
-    def __init__(self, axis=[1.0, 0.0, 0.0], file="Actuators/Yaml/Magnettorquer.yaml") -> None:
+    # TODO: Calculate the magnetic field strength based on the position of the satellite
+    # TODO: Calculate torque based on the strength of the magnetic field
+    # TODO: Calculate energy output from current etc.
+    # TODO: Calculate torque from current available
+
+    maxTorque: float = 1.0
+    maxCurrent: float = 1.0
+    scalingFactor: float = 1.0
+
+    def __init__(self, axis: Optional[np.ndarray]=None) -> None:
         super().__init__(axis)
-
-        with open(file, 'r') as file:
-            self.param = yaml.safe_load(file)
-        file.close()
-
-        self.scaling = self.param["scalingFactor"]
-        self.maxCurrent = self.param["maxCurrent"]
-        self.maxTorque = self.param["maxTorque"]
-
 
     def apply_torque(self, L, dt):
-        # Assume instantanious torque, so dt becomes irrelevant
-        tau = min(abs(L), self.maxTorque)
-        tau *= np.sign(L)
-        return tau
+        """
+            The torque provided from the magnettorquer is essentially instant, 
+            and thus does not need any model of the transient response, and 
+            just the statuarted output does just fine for now.
+        """
+        return Actuator.saturate(L, self.maxTorque, -self.maxTorque)
+
+
+
+
+if __name__ == "__main__":
+    pass
