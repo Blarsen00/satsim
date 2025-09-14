@@ -35,12 +35,12 @@ class Magnetorquer(Actuator):
 
         return np.cross(m, B)
 
-    def apply_torque(self, L, dt):
+    def apply_torque(self, tau, dt: float = 0.1):
         """ The torque provided from the magnettorquer is essentially instant, 
             and thus does not need any model of the transient response, and 
             just the statuarted output does just fine for now.
         """
-        return Actuator.saturate(L, self.maxTorque, -self.maxTorque)
+        return Actuator.saturate(tau, self.maxTorque, -self.maxTorque)
 
 
 
@@ -53,7 +53,7 @@ def testTorque(mqt:Magnetorquer):
     for i, t in enumerate(T):
         # LC[i] = 0.6 * mqt.maxTorque
         LC[i] = 1.2 * mqt.maxTorque * np.sin(t)
-        L[i] = mqt.apply_torque(LC[i], dt)
+        L[i] = np.linalg.norm(mqt.apply_torque(LC[i], dt), 2)
 
     fig_L = plt.figure(2)
     plt.title("Torque plot")

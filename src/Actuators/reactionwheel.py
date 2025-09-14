@@ -112,7 +112,7 @@ class ReactionWheel(Actuator):
 
         return T
 
-    def apply_torque(self, tau: float, dt: float):
+    def apply_torque(self, tau: float, dt: float=0.1):
         T = self.wheel_torque(tau, dt)
         return T
 
@@ -123,6 +123,7 @@ def test_reaction_wheel():
     tau = np.zeros(30_000)
     T = np.arange(0, 3000, 0.1)
     for i in range(30_000):
+        # tau[i] = np.linalg.norm(wheel.apply_torque(1.01, 0.1), 2)
         tau[i] = wheel.apply_torque(1.01, 0.1)
         w[i] = wheel.get_rpm()
         # w[i] = wheel.w

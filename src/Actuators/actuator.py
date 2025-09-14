@@ -27,12 +27,12 @@ class Actuator:
         file.close()
 
     @abstractmethod
-    def apply_torque(self, tau: float, dt: float):
+    def apply_torque(self, tau: float, dt: float=0.1):
         """
             Calculate and return the torque from the actuator
             provided referece torque.
         """
-        return L
+        return tau
 
     @staticmethod
     def saturate(value: float,
@@ -58,15 +58,13 @@ class Magnetorquer(Actuator):
     def __init__(self, axis: Optional[np.ndarray]=None) -> None:
         super().__init__(axis)
 
-    def apply_torque(self, L, dt):
+    def apply_torque(self, tau, dt: float=0.1):
         """
             The torque provided from the magnettorquer is essentially instant, 
             and thus does not need any model of the transient response, and 
             just the statuarted output does just fine for now.
         """
-        return Actuator.saturate(L, self.maxTorque, -self.maxTorque)
-
-
+        return Actuator.saturate(tau, self.maxTorque, -self.maxTorque)
 
 
 if __name__ == "__main__":
