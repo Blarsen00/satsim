@@ -19,6 +19,14 @@ class PhysicalState:
 
 
 class Simulate:
+    @staticmethod
+    def rad2rpm(w: float):
+        return w * 60 / 2 * np.pi
+
+    @staticmethod
+    def rpm2rad(rpm: float):
+        return rpm * 2 * np.pi / 60
+
     @ staticmethod
     def angular_momentum(J: np.ndarray, w: np.ndarray):
         assert type(J) is np.ndarray and J.shape == (3,3)
