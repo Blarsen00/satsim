@@ -43,13 +43,13 @@ class BaseReference:
         if not is_dataclass(dataclass):
             print(f"Error: {dataclass} is not a dataclass")
             return False
-        
+
         wanted_attributes = ["rot", "w", "w_dot"]
         for a in wanted_attributes:
             if not hasattr(dataclass, a):
                 print(f"Error: Wrong dataclass, as it has no member {a}")
                 return False
-        
+
         return True
 
 
