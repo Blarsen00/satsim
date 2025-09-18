@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import Optional
 
 from simulation import PhysicalState
+from Actuators.actuatorSystem import ActuatorSystem
 
 # SGP4 implementation. Read docs: https://pypi.org/project/sgp4/
 from sgp4.api import accelerated, Satrec, WGS72
@@ -32,15 +33,22 @@ class Satellite:
     state: PhysicalState = PhysicalState()
     J: np.ndarray = np.identity(3) * 0.1        # Inertia matrix
     H: np.ndarray = np.zeros((3, 3))            # Angular momentum
-    energy: int = 100
-    satrec = BIOSAT
 
-    def __init__(self, state=None, satrec: Optional[Satrec]=None) -> None:
+    satrec = BIOSAT
+    energy: int = 100
+
+    def __init__(self,
+                 state=None,
+                 satrec: Optional[Satrec]=None, 
+                 actuator_system: Optional[ActuatorSystem]=None) -> None:
         if state is not None:
             self.state = state
             self.initial_state = state
         else:
             self.initial_state = PhysicalState()
+
+        # self.actuator_system = actuator_system if actuator_system is not None else ActuatorSystem()
+        self.actuator_system = ActuatorSystem.init_base_rw_system()
 
         # SGP4 model
         self.saterec = BIOSAT if satrec is None else satrec

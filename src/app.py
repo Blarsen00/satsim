@@ -73,7 +73,8 @@ class App(tk.Tk):
 
 
     def update_params(self):
-        self.ani_obj.load_animation_parameters(self.frames["Params"].param)
+        # self.ani_obj.load_animation_parameters(self.frames["Params"].param)
+        self.ani_obj.load_time_parameters(self.frames["Params"].param)
         self.ani_obj.controller = self.frames["Controller"].get_controller()
         self.ani_obj.ref = self.frames["Reference"].get_reference()
         print(f"Selected Controller: {self.ani_obj.controller.param}")

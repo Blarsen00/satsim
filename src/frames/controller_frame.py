@@ -10,8 +10,9 @@ class PDFrame(BaseParamFrame):
     def __init__(self, parent, param=None):
         self.param = PDParameters() if param is None else param
         super().__init__(parent, self.param)
-        self.p_vars = [tk.StringVar(value=str(getattr(self.param, "p")[i]))
-                       for i in range(len(getattr(self.param, "p")))]
+        self.p_var = tk.StringVar(value=str(getattr(self.param, "p")))
+        # self.p_vars = [tk.StringVar(value=str(getattr(self.param, "p")[i]))
+                       # for i in range(len(getattr(self.param, "p")))]
         self.d_vars = [tk.StringVar(value=str(getattr(self.param, "d")[i]))
                        for i in range(len(getattr(self.param, "d")))]
         self.draw_frame()
@@ -36,12 +37,14 @@ class PDFrame(BaseParamFrame):
                                                  padx=self.base_padding_x,
                                                  pady=self.base_padding_y)
 
-        self.add_list_field("p: ", self.p_vars)
+        # self.add_list_field("p: ", self.p_vars)
+        self.add_field("p: ", self.p_var)
         self.add_list_field("d: ", self.d_vars)
 
 
     def apply(self):
-        p = [float(self.p_vars[i].get()) for i in range(len(self.p_vars))]
+        # p = [float(self.p_vars[i].get()) for i in range(len(self.p_vars))]
+        p = float(self.p_var.get())
         d = [float(self.d_vars[i].get()) for i in range(len(self.d_vars))]
         setattr(self.param, "p", p)
         setattr(self.param, "d", d)
@@ -50,7 +53,7 @@ class PDFrame(BaseParamFrame):
 
     def update_values(self, param=None):
         for i in range(len(self.d_vars)):
-            self.p_vars[i].set(str(self.param.p[i]))
+            # self.p_vars[i].set(str(self.param.p[i]))
             self.d_vars[i].set(str(self.param.d[i]))
         return super().update_values(param)
 

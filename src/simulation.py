@@ -72,6 +72,7 @@ class Simulate:
         assert type(Q) is np.ndarray and Q.shape == (4,)
         assert type(w) is np.ndarray and w.shape == (3,)
 
+        # theta = [2*x*dt for x in w]
         theta = [x*dt for x in w]
         D = np.sum([x**2 for x in theta])
         R = np.array([
@@ -82,8 +83,8 @@ class Simulate:
         ])
 
         Q = Q + 0.5 * R - (D - D/3 - D/4) * Q
-        return Rotation.from_quat(Q)
 
+        return Rotation.from_quat(Q)
 
     @staticmethod
     def update_state(L: np.ndarray, state: PhysicalState, 

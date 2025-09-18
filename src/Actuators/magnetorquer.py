@@ -1,5 +1,5 @@
 import numpy as np
-from actuator import Actuator
+from Actuators.actuator import Actuator
 import matplotlib.pyplot as plt
 from typing import Optional, Union
 

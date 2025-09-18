@@ -3,6 +3,7 @@ from tkinter import ttk, filedialog
 
 from dataclasses import dataclass, field
 from frames.base_frame import BaseParamFrame
+from animation import TimeParameters
 
 from typing import List
 
@@ -16,12 +17,12 @@ class PlotParameters:
     colors: List[str] = field(default_factory=lambda: ["red", "blue", "green"])
 
 
-@dataclass
-class TimeParameters:
-    t0: float = 0.0         # Start time for the save
-    t_end: float = 20.0     # End time for the save
-    dt: float = 0.05        # dt for the simulation
-    interval: int = 5       # Refresh rate for the animation in ms
+# @dataclass
+# class TimeParameters:
+#     t0: float = 0.0         # Start time for the save
+#     t_end: float = 20.0     # End time for the save
+#     dt: float = 0.05        # dt for the simulation
+#     interval: int = 5       # Refresh rate for the animation in ms
 
 
 

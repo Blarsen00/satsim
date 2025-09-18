@@ -1,13 +1,18 @@
 import numpy as np
-from actuator import Actuator
+from Actuators.actuator import Actuator, ActuatorAnimation
 import matplotlib.pyplot as plt
-from typing import Optional
+from matplotlib.artist import Artist
+from typing import Optional, Tuple, Iterable
 
+from animation import BaseAnimation
+from collections import deque
 
 class ReactionWheel(Actuator):
     """
         Handy resource: https://www.researchgate.net/publication/263083066_Torque_and_Speed_Control_Loops_of_a_Reaction_Wheel
     """
+    name: str = "RW"
+
     # TODO: Change the variables to those that match the hardware
     # State variables
     J: np.ndarray = np.eye(3) * 1.53e-3 # Inertia matrix
@@ -25,11 +30,23 @@ class ReactionWheel(Actuator):
     # max_rpm: float = 5000.0
 
     def __init__(self, axis: Optional[np.ndarray] = None) -> None:
+        super().__init__(axis)
+
         # Store it so its not necessary to calculate it at each iteration
         self.J_inv = np.linalg.inv(self.J)
         self.max_rpm = self.calculate_max_rpm()
         self.max_w = self.max_rpm * np.pi / 30
-        super().__init__(axis)
+
+        # Just add some dummy data at the start
+        self.log_data("torque", 0)
+        self.log_data("reference", 0)
+        self.log_data("I", 0)
+        self.log_data("motor", 0)
+        self.log_data("drag", 0)
+        self.log_data("w", 0)
+        self.log_data("rpm", 0)
+        self.log_data("w_dot", 0)
+
 
     def get_rpm(self, w: Optional[float]=None):
         w = w if w is not None else self.w
@@ -75,7 +92,7 @@ class ReactionWheel(Actuator):
                      tau: float,
                      km: Optional[float]=None,
                      max_I: Optional[float]=None,
-                     dt: float=0.1):
+                     dt: float=0.1) -> Tuple[float, float]:
         """
             Torque provided by the motor to the wheels. Assumed to be proportional 
             to the applied electrical current to the motor.
@@ -94,14 +111,19 @@ class ReactionWheel(Actuator):
         # Torque from wheel
         T = km * I
 
-        return T
+        return T, I
 
     def wheel_torque(self, tau: float, dt: float):
         """The total torque from the wheel comes from the motor, and the drag.
             Update the angular velocity of the wheel as well.
         """
         drag = self.drag(self.w, self.dc, self.dv)
-        motor = self.motor_torque(tau, self.km, self.max_I, dt)
+        motor, I = self.motor_torque(tau, self.km, self.max_I, dt)
+
+        self.log_data("I", I)
+        self.log_data("motor", motor)
+        self.log_data("drag", drag)
+
         T = motor - drag
 
         # Update the state of the wheel
@@ -114,7 +136,22 @@ class ReactionWheel(Actuator):
 
     def apply_torque(self, tau: float, dt: float=0.1):
         T = self.wheel_torque(tau, dt)
+
+        # Log the available data
+        self.log_data("time", self.data["time"][-1] + 0.1)
+        self.log_data("reference", tau)
+        self.log_data("w", self.w)
+        self.log_data("rpm", self.get_rpm())
+        self.log_data("torque", T)
+
         return T
+
+
+##################### Animation part of the reactionwheel ####################
+# class ReactionWheelAnimation(ActuatorAnimation):
+#     def __init__(self, actuator) -> None:
+#         super().__init__(actuator)
+#         self.color="blue"
 
 
 def test_reaction_wheel():
@@ -151,7 +188,7 @@ def test_drag():
 
     ax = plt.subplot()
     ax.plot(w[1:], d[1:])
-    ax.axhline(ReactionWheel.motor_torque(10000.0), color="r", linestyle="--")
+    ax.axhline(ReactionWheel.motor_torque(10000.0)[0], color="r", linestyle="--")
 
     plt.tight_layout() # Improves spacing between subplots
     plt.show()

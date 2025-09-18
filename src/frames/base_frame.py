@@ -77,7 +77,7 @@ class BaseParamFrame(tk.Frame):
                 setattr(self.param,
                         f.name, 
                         str(self.param_vars[f.name].get()))
-        print(self.param)
+        # print(self.param)
 
 
     def update_values(self, param=None):

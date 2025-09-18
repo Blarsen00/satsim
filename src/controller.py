@@ -8,7 +8,7 @@ from typing import List
 
 @dataclass
 class PDParameters:
-    p: List[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
+    p: float = 0.1
     d: List[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
 
 
@@ -63,12 +63,12 @@ class PDController(Controller):
         self.param: PDParameters = PDParameters()
 
 
-    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs):
+    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs) -> np.ndarray:
         qc = ref.rot.as_quat()
         wc = ref.w
         q = state.rot.as_quat()
         w = state.w
-        p = np.array(self.param.p)
+        p = self.param.p
         d = np.array(self.param.d)
 
         # qe = misc.quat_multiply(qc, misc.quat_conjugate(q))
@@ -104,7 +104,7 @@ class SMCController(Controller):
         return s
 
 
-    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs):
+    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs) -> np.ndarray:
         J: np.ndarray = kwargs["J"]
         q = state.rot.as_quat()
         e = self.param.e
