@@ -17,6 +17,11 @@ class PhysicalState:
     def randomize_angular_velocity(self):
         self.w = np.random.uniform(-1, 1, 3)
 
+    def __str__(self) -> str:
+        s = f"Rotation: \n{self.rot}\n"
+        s += f"w: {self.w}"
+        return s
+
 
 class Simulate:
     @staticmethod

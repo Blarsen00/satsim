@@ -1,4 +1,4 @@
-from dataclasses import is_dataclass
+from dataclasses import is_dataclass, fields
 from simulation import Simulate, PhysicalState
 
 
@@ -52,4 +52,9 @@ class BaseReference:
 
         return True
 
+    def __str__(self) -> str:
+        s = ''
+        for field in fields(self.state):
+            s += "{:<10}: {}\n".format(field.name, getattr(self.state, field.name))
+        return s
 

@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import ttk, filedialog
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from frames.base_frame import BaseParamFrame
 from animation import TimeParameters
 
-from typing import List
+from typing import List, Optional, Any
+
+from misc import test_page
 
 
 @dataclass 
@@ -17,40 +19,33 @@ class PlotParameters:
     colors: List[str] = field(default_factory=lambda: ["red", "blue", "green"])
 
 
-# @dataclass
-# class TimeParameters:
-#     t0: float = 0.0         # Start time for the save
-#     t_end: float = 20.0     # End time for the save
-#     dt: float = 0.05        # dt for the simulation
-#     interval: int = 5       # Refresh rate for the animation in ms
-
-
-
 class AttitudeFrame(BaseParamFrame):
-    def __init__(self, parent, param=None):
-        self.param = TimeParameters() if param is None else param
+    def __init__(self,
+                 parent,
+                 time_param:Optional[TimeParameters]=None):
+        self.time_param = TimeParameters() if time_param is None else time_param
+        self.param = asdict(self.time_param)
         super().__init__(parent, self.param)
-        self.draw_frame()
-
 
     def reset(self):
-        self.param = TimeParameters()
+        self.time_param = TimeParameters()
         self.update_values(self.param)
 
-
     def draw_frame(self):
-        self.add_field("Start time (s): ",
-                       self.param_vars["t0"])
+        self.add_field("Start time (s): ", self.vars["t0"])
+        self.add_field("End time(s): ", self.vars["t_end"])
+        self.add_field("Time step (ms): ", self.vars["dt"])
+        self.add_field("Interval: ", self.vars["interval"])
 
-        self.add_field("End time(s): ",
-                       self.param_vars["t_end"])
+    def apply(self):
+        super().apply()
+        self.time_param = TimeParameters(**self.param)
 
-        self.add_field("Time step (ms): ",
-                       self.param_vars["dt"])
-
-        self.add_field("Interval: ",
-                       self.param_vars["interval"])
+    def get_obj(self) -> Any:
+        return self.time_param
 
 
-
+if __name__ == '__main__':
+    root = tk.Tk()
+    test_page(root, AttitudeFrame(root))
 

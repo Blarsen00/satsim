@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from abc import abstractmethod
-from typing import Optional, Union, Iterable
+from typing import Optional, Union, Iterable, List
 import yaml
 from collections import defaultdict, deque
 from animation import BaseAnimation
@@ -19,6 +19,8 @@ from animation import BaseAnimation
 class Actuator():
     # axis: np.ndarray = np.array([1.0, 0.0, 0.0])
     history_size: int = 100
+    _params: List[str] = []
+    name: str = "Ideal Actuator"
 
     def __init__(self, axis: Optional[np.ndarray]=None) -> None:
         # Normalize the axis
@@ -38,8 +40,7 @@ class Actuator():
 
     @abstractmethod
     def apply_torque(self, tau: float, dt: float=0.1):
-        """
-            Calculate and return the torque from the actuator
+        """ Calculate and return the torque from the actuator
             provided referece torque.
         """
         return tau
@@ -54,6 +55,11 @@ class Actuator():
 
         return min(maximum, max(value, minimum))
 
+    def __str__(self) -> str:
+        s = ''
+        for key in self._params:
+            s += "{:>12}: {}\n".format(key, getattr(self, key))
+        return s
 
 ##################### Animation part of the actuators ####################
 # OBS: Plotting parameters for each key
@@ -99,7 +105,7 @@ PLOTTING_PARAMETES = {
         "linestyle": "-",
         "x_label": "Time (s)",
         "y_label": r"$\omega$ ($\frac{rad}{s}$)",
-        "y_lim": (0, 1.0),
+        "y_lim": (-1.0, 1.0),
         "grid": True,
         "legend": False
     },
@@ -117,7 +123,7 @@ PLOTTING_PARAMETES = {
         "linestyle": "-",
         "x_label": "Time (s)",
         "y_label": r"$\omega$ (rpm)",
-        "y_lim": (0, 5000),
+        "y_lim": (-3000, 3000),
         "grid": True,
         "legend": False
     },
@@ -137,8 +143,7 @@ class ActuatorAnimation(BaseAnimation):
     def __init__(self, actuator) -> None:
         self.actuator = actuator
 
-        # WARN: This needs to happen before calling super()__init__() for BaseAnimation
-        self.fig = plt.figure()
+        self.fig = plt.figure() # WARN: This needs to happen before calling super()__init__() for BaseAnimation
         self.ax = self.fig.add_subplot()
         self.color = "blue"
         self.key = "torque"
@@ -146,6 +151,7 @@ class ActuatorAnimation(BaseAnimation):
         # self.key = "rpm"
 
         super().__init__()
+        # self.animation.blit = False
 
     def add_canvas(self, canvas):
         self.canvas = canvas
@@ -155,16 +161,33 @@ class ActuatorAnimation(BaseAnimation):
 
     def update_display_values(self):
         for key, var in self.display_vars.items():
-            # param = PLOTTING_PARAMETES[key]
             value = self.actuator.data[key][-1]
-            txt = f"{key}: {value:.2f}"
+            # txt = "{:<12.3e}".format(value)
+            txt = "{:<12.5f}".format(value)
             var.set(txt)
+
+    def swap_data(self, key: str):
+        print(key)
+        self.key = key
+        self.fig.clear()
+        self.init_anim()
+        # param = PLOTTING_PARAMETES[self.key]
+        # # self.ax.clear()
+        # # self.init_anim()
+        # self.ax.set_ylabel(param["y_label"])
+        # self.ax.set_ylim(param["y_lim"])
+        # self.ax.grid(param["grid"])
+        # if param["legend"]:
+        #     self.ax.legend()
+        self.fig.canvas.draw_idle()
+        # self.canvas.draw_idle()
 
     def init_anim(self) -> Iterable[Artist]:
         param = PLOTTING_PARAMETES[self.key]
         # self.ax.set_xlabel(param["x_label"])
         self.ax.set_ylabel(param["y_label"])
         self.ax.set_ylim(param["y_lim"])
+        self.ax.set_xlim(self.time.t0, self.time.t_end)
         self.ax.grid(param["grid"])
         if param["legend"]:
             self.ax.legend()
@@ -192,10 +215,11 @@ class ActuatorAnimation(BaseAnimation):
         x = self.actuator.data["time"]
         y = self.actuator.data[self.key]
 
-        self.line.set_data(x, y)
-        self.ax.set_xlim(x[0], x[-1] + 3.0)
-
         self.update_display_values()
+
+        self.line.set_data(x, y)
+        if len(x) > ((self.time.t_end - self.time.t0) // (self.time.t_end + 1)):
+            self.ax.set_xlim(x[0], x[-1] + 3.0)
 
         if self.key == "torque":
             y_ref = self.actuator.data["reference"]

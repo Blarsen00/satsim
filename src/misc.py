@@ -35,7 +35,7 @@ def close_app(root):
     root.destroy()
 
 
-def test_page(root, page: BaseParamFrame):
+def test_page(root, page: tk.Frame):
     root.title("Test of frame")
     root.geometry("800x400")
     page.pack(fill="both", expand=True)

@@ -6,89 +6,79 @@ from dataclasses import dataclass, is_dataclass, field
 from typing import List
 
 
-@dataclass
-class PDParameters:
-    p: float = 0.1
-    d: List[float] = field(default_factory=lambda: [1.0, 1.0, 1.0])
-
-
-@dataclass
-class SMCParameters:
-    G: List[List[float]] = field(default_factory=lambda:[[0.15, 0.0, 0.0],
-                                                         [0.0, 0.15, 0.0],
-                                                         [0.0, 0.0, 0.15]])
-    k: float = 0.015
-    e: float = 0.01
-
-
 class Controller(ABC):
+    # Class-level list of tunable parameters
+    _params = []
     def __init__(self) -> None:
-        pass
+        super().__init__()
 
-    @staticmethod
-    def get_controller(controller_parameters):
-        if isinstance(controller_parameters, SMCParameters):
-            controller = SMCController()
-            controller.load_params(controller_parameters)
-            return controller
-
-        elif isinstance(controller_parameters, PDParameters):
-            controller = PDController()
-            controller.load_params(controller_parameters)
-            return controller
-
-        raise ValueError(f"Unknown controller type: {controller_parameters}")
-
-
-    def load_params(self, param):
-        if is_dataclass(param):
-            self.param = param
-
-    def load_state(self, state: PhysicalState) -> None:
-        self.state = state
-
-    def load_ref(self, ref: PhysicalState) -> None:
-        self.ref = ref
-
+    def set_param(self, key: str, value):
+        assert key in self._params, \
+            f"{key} is not in the tunable list: {self._params}"
+        assert isinstance(value, type(getattr(self, key))), \
+            f"The type of value: {type(value)} needs to be of type: {type(getattr(self, key))}"
+        setattr(self, key, value)
 
     @abstractmethod
-    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs) -> np.ndarray:
-        """ Base method to be overriden in subclass """
+    def output(self,
+               state: PhysicalState,
+               ref: PhysicalState,
+               **kwargs) -> np.ndarray:
+        """ Method for calculating the output for the actuators. Takes
+            the current (estimated) state, and reference and uses it to
+            calculate the output torque vector.
+        """
         pass
+
+    def __str__(self) -> str:
+        s = ''
+        for key in self._params:
+            s += "{:>12}: {}\n".format(key, getattr(self, key))
+        return s
 
 
 class PDController(Controller):
-    def __init__(self) -> None:
+    _params = ['p', 'd']
+
+    def __init__(self, 
+                 p: float=0.1,
+                 d: np.ndarray=np.array([1.0, 1.0, 1.0])) -> None:
         super().__init__()
-        self.param: PDParameters = PDParameters()
+
+        self.p = p
+        self.d = d
 
 
-    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs) -> np.ndarray:
+    def output(self,
+               state: PhysicalState,
+               ref: PhysicalState,
+               **kwargs) -> np.ndarray:
+
         qc = ref.rot.as_quat()
         wc = ref.w
         q = state.rot.as_quat()
         w = state.w
-        p = self.param.p
-        d = np.array(self.param.d)
 
-        # qe = misc.quat_multiply(qc, misc.quat_conjugate(q))
         qe = misc.quat_multiply(misc.quat_conjugate(q), qc)
         qvec = qe[:-1]
         we = w - wc
-        # we = wc - w
 
-        # L = - np.sign(qe[-1]) *  p * qvec - d * we
-        L = np.sign(qe[-1]) *  p * qvec - d * we
-        # L = - p * qvec - d * we
-        # L = - p * qvec - d * w
+        L = np.sign(qe[-1]) * self.p * qvec - self.d * we
         return L
 
 
 class SMCController(Controller):
+    _params = ['e', 'k', 'G']
     def __init__(self) -> None:
         super().__init__()
-        self.param: SMCParameters = SMCParameters()
 
+        self.e = 0.01
+        self.k = 0.015
+        self.G = np.array([
+            [0.15, 0.0, 0.0],
+            [0.0, 0.15, 0.0],
+            [0.0, 0.0, 0.15]
+        ])
 
     @staticmethod
     def saturation(manifold: np.ndarray, epsilon: float):
@@ -104,15 +94,18 @@ class SMCController(Controller):
         return s
 
 
-    def output(self, state: PhysicalState, ref: PhysicalState, **kwargs) -> np.ndarray:
+    def output(self,
+               state: PhysicalState,
+               ref: PhysicalState,
+               **kwargs) -> np.ndarray:
+
         J: np.ndarray = kwargs["J"]
         q = state.rot.as_quat()
-        e = self.param.e
-        k = self.param.k
-        G = self.param.G
+        e = self.e
+        k = self.k
+        G = self.G
 
         qe = misc.quat_multiply(ref.rot.as_quat(), misc.quat_conjugate(q))
-        # qe = misc.quat_multiply(misc.quat_conjugate(q), ref.rot.as_quat())
         q_vec = qe[:-1]
         q4 = qe[-1]
 

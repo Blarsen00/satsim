@@ -4,7 +4,7 @@ from Actuators.actuator import Actuator, ActuatorAnimation
 from Actuators.reactionwheel import ReactionWheel
 from Actuators.magnetorquer import Magnetorquer
 from animation import BaseAnimation
-from typing import List, Sequence, Optional, Type, Self
+from typing import List, MutableSequence, Sequence, Optional, Type, Self
 
 
 IDEAL_ACTUATORS = [
@@ -28,7 +28,8 @@ class ActuatorSystem:
     def __init__(self, actuators: Optional[Sequence[Actuator]]=None) -> None:
         # print([x.axis for x in BASE_RW_CONFIG])
         self.actuators: Sequence[Actuator] = BASE_RW_CONFIG if actuators is None else actuators
-        self.animations = [ActuatorAnimation(ac) for ac in self.actuators]
+        # self.actuators: MutableSequence[Actuator] = BASE_RW_CONFIG if actuators is None else actuators
+        # self.animations = [ActuatorAnimation(ac) for ac in self.actuators]
 
         self.A = np.array([x.axis for x in self.actuators]).T
         self.A_inv = np.linalg.pinv(self.A)
@@ -64,8 +65,7 @@ class ActuatorSystem:
             s += f"{ac.axis}\n"
 
         s += f"A: {self.A}\n"
-        # s += f"Det: {np.linalg.det(self.A)}"
-        s += f"{[x.actuator.axis for x in self.animations]}"
+        s += f"{[x.axis for x in self.actuators]}"
         return s
 
 

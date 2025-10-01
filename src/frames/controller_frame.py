@@ -1,27 +1,16 @@
 import tkinter as tk
-from typing import Dict
+from typing import Dict, Optional, Any
 
-from controller import Controller, PDParameters, SMCParameters
+from controller import Controller, PDController, SMCController
 from misc import test_page
 
 from frames.base_frame import BaseParamFrame
 
 class PDFrame(BaseParamFrame):
-    def __init__(self, parent, param=None):
-        self.param = PDParameters() if param is None else param
-        super().__init__(parent, self.param)
-        self.p_var = tk.StringVar(value=str(getattr(self.param, "p")))
-        # self.p_vars = [tk.StringVar(value=str(getattr(self.param, "p")[i]))
-                       # for i in range(len(getattr(self.param, "p")))]
-        self.d_vars = [tk.StringVar(value=str(getattr(self.param, "d")[i]))
-                       for i in range(len(getattr(self.param, "d")))]
-        self.draw_frame()
-
-
-    def reset(self):
-        self.param = PDParameters()
-        self.update_values(self.param)
-
+    def __init__(self, parent, controller: Optional[Controller]=None):
+        self.controller = PDController() if controller is None else controller
+        param = {key: getattr(self.controller, key) for key in self.controller._params}
+        super().__init__(parent, param)
 
     def draw_frame(self):
         row1 = tk.Frame(self.canvas)
@@ -37,65 +26,53 @@ class PDFrame(BaseParamFrame):
                                                  padx=self.base_padding_x,
                                                  pady=self.base_padding_y)
 
-        # self.add_list_field("p: ", self.p_vars)
-        self.add_field("p: ", self.p_var)
-        self.add_list_field("d: ", self.d_vars)
+        self.add_field("p: ", self.vars["p"])
+        self.add_list_field("d: ", self.vars["d"])
 
-
+    def reset(self):
+        self.controller = PDController()
+        self.param = {key: getattr(self.controller, key) for key in self.controller._params}
+        return super().reset()
+    
     def apply(self):
-        # p = [float(self.p_vars[i].get()) for i in range(len(self.p_vars))]
-        p = float(self.p_var.get())
-        d = [float(self.d_vars[i].get()) for i in range(len(self.d_vars))]
-        setattr(self.param, "p", p)
-        setattr(self.param, "d", d)
-        return super().apply()
+        super().apply()
+        for key in self.param.keys():
+            setattr(self.controller, key, self.param[key])
+        print(self.controller)
 
-
-    def update_values(self, param=None):
-        for i in range(len(self.d_vars)):
-            # self.p_vars[i].set(str(self.param.p[i]))
-            self.d_vars[i].set(str(self.param.d[i]))
-        return super().update_values(param)
+    def get_obj(self) -> Any:
+        return self.controller
 
 
 class SMCFrame(BaseParamFrame):
-    def __init__(self, parent, param=None):
-        self.param = SMCParameters() if param is None else param
-        super().__init__(parent, self.param)
-
-        self.G_vars = [[tk.StringVar(value=str(self.param.G[i][j]))
-                        for j in range(3)] for i in range(3)]
-        self.draw_frame()
-
-
-    def reset(self):
-        self.param = SMCParameters()
-        self.update_values(self.param)
-
+    def __init__(self, parent, controller: Optional[Controller]=None):
+        self.controller = SMCController() if controller is None else controller
+        param = {key: getattr(self.controller, key) for key in self.controller._params}
+        super().__init__(parent, param)
 
     def draw_frame(self):
-        self.add_field("k: ", self.param_vars["k"])
-        self.add_field("e: ", self.param_vars["e"])
-        self.add_array_field("G: ", self.G_vars)
+        self.add_field("k: ", self.vars["k"])
+        self.add_field("e", self.vars["e"])
+        self.add_array_field("G: ", self.vars["G"])
 
+    def reset(self):
+        self.controller = SMCController()
+        self.param = {key: getattr(self.controller, key) for key in self.controller._params}
+        print(self.controller)
+        return super().reset()
 
     def apply(self):
-        G = [[float(self.G_vars[i][j].get()) for j in range(3)]
-            for i in range(3)]
-        setattr(self.param, "G", G)
-        return super().apply()
+        super().apply()
+        for key in self.param.keys():
+            setattr(self.controller, key, self.param[key])
+        print(self.controller)
 
-
-    def update_values(self, param=None):
-        super().update_values(param)
-        for i in range(3):
-            for j in range(3):
-                self.G_vars[i][j].set(str(self.param.G[i][j]))
+    def get_obj(self) -> Any:
+        return self.controller
 
 
 class ControllerFrame(tk.Frame):
-    """
-        Page for choosing the right controller, and settings
+    """ Page for choosing the right controller, and settings
         its parameters. Adding new controllers needs to be done
         here. 
     """
@@ -110,7 +87,6 @@ class ControllerFrame(tk.Frame):
         self.active_frame: tk.Frame = self.frames["pd-controller"]
         self.active_frame.pack(fill="both", expand=True)
 
-
     def draw(self):
         top_frame = tk.Frame(self)
         self.controller_type = tk.StringVar(value="pd-controller")
@@ -123,25 +99,22 @@ class ControllerFrame(tk.Frame):
         tk.Label(top_frame, text="Controller type: ").pack(side=tk.LEFT)
         controller_menu.pack(side=tk.LEFT, pady=5, fill="x")
 
-
     def update_active_controller(self, var: tk.StringVar):
-        # controller = self.controller_type.get()
         self.active_frame.pack_forget()
         self.active_frame = self.frames[var]
         self.active_frame.pack(side=tk.TOP, fill="x")
 
-
     def get_controller(self):
-        return Controller.get_controller(self.active_frame.param)
-
+        # WARN: Assumes that the frame is a sibclass of BaseParamFrame
+        return self.active_frame.get_obj()
 
 
 if __name__ == '__main__':
-    root = tk.Tk()
-    test_page(root, PDFrame(root))
-
-    root = tk.Tk()
-    test_page(root, SMCFrame(root))
+    # root = tk.Tk()
+    # test_page(root, PDFrame(root))
+    #
+    # root = tk.Tk()
+    # test_page(root, SMCFrame(root))
 
     root = tk.Tk()
     test_page(root, ControllerFrame(root))

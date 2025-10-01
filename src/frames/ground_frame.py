@@ -1,13 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
-from scipy.spatial.transform import Rotation
 from abc import abstractmethod
 from dataclasses import dataclass, field, fields, is_dataclass
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Union
 import numpy as np
 
 
-class BaseParamFrame(tk.Frame):
+class GroundParamFrame(tk.Frame):
     """ Frame to build pages for setting paramters for classes. Inherit from 
         this frame, and draw it. The rest should be handled by this foundation.
 
@@ -41,7 +40,6 @@ class BaseParamFrame(tk.Frame):
 
         self.reset_btn.pack(side="left", padx=10)
         self.apply_btn.pack(side="left", padx=10)
-        self.draw_frame()
 
     @staticmethod
     def _create_vars_from_arr(arr):
@@ -50,30 +48,22 @@ class BaseParamFrame(tk.Frame):
             arr.
         """
         if isinstance(arr, np.ndarray):
-            return [BaseParamFrame._create_vars_from_arr(x) for x in arr]
+            return [GroundParamFrame._create_vars_from_arr(x) for x in arr]
         else:
             return tk.StringVar(value=str(arr))
 
     def set_var(self, key: str):
         val = self.param[key]
-        assert isinstance(val, float) or isinstance(val, np.ndarray) \
-                                        or isinstance(val, np.floating) \
-                                        or isinstance(val, Rotation) \
-                                        or isinstance(val, int), \
+        assert isinstance(val, float) or isinstance(val, np.ndarray), \
             f"Only floats and numpy arrays are supported, not {type(val)}"
 
-        if isinstance(val, float) or isinstance(val, np.floating) or isinstance(val, int):
+        if isinstance(val, float):
             self.vars[key] = tk.StringVar(value=str(val))
             return
 
         if isinstance(val, np.ndarray):
             self.vars[key] = self._create_vars_from_arr(val)
             return
-
-        if isinstance(val, Rotation):
-            # NOTE: Convert the rotation to a quaternion before making stringvars
-            self.vars[key] = self._create_vars_from_arr(val.as_quat())
-
 
     @staticmethod
     def _get_arr_from_vars(vars):
@@ -87,7 +77,8 @@ class BaseParamFrame(tk.Frame):
                 raise ValueError(f"Invalid input: '{vars.get()}' is not a valid number.")
 
         else:
-            return [BaseParamFrame._get_arr_from_vars(x) for x in vars]
+            return [GroundParamFrame._get_arr_from_vars(x) for x in vars]
+
 
     @abstractmethod
     def draw_frame(self):
@@ -96,11 +87,6 @@ class BaseParamFrame(tk.Frame):
         """
         pass
 
-    def redraw(self):
-        self.update()
-        # for widget in self.winfo_children():
-            # widget.destroy()
-        # self.draw_frame()
 
     @abstractmethod
     def reset(self):
@@ -111,56 +97,16 @@ class BaseParamFrame(tk.Frame):
         self.update_values()
         self.apply()
 
-    @abstractmethod
-    def get_obj(self) -> Any:
-        """ Each frame sets the parameter for some object or class 
-            and needs to implement this method for returning the object
-            upon request.
-        """
-        pass
 
     def apply(self):
         """ Store the values from the stringvars in the param dictionary.
         """
         for key in self.param.keys():
-            val = self._get_arr_from_vars(self.vars[key])
-            if isinstance(val, float) or isinstance(val, int):
+            val = self._get_arr_from_vars(self.param[key])
+            if isinstance(val, float):
                 self.param[key] = val
-            elif isinstance(self.param[key], Rotation):
-                # NOTE: Apply the update after converting to quaternion to display the normalized quaternion
-                self.param[key] = Rotation.from_quat(val)
-                BaseParamFrame.update_vars(self.vars[key], self.param[key].as_quat(), precision=3)
-            elif isinstance(val, list): 
+            else: 
                 self.param[key] = np.array(val)
-            else:
-                raise TypeError()
-
-
-    @staticmethod
-    def update_vars(vars, arr, precision=np.inf):
-        if isinstance(vars, tk.StringVar) and \
-            (isinstance(arr, np.floating) or isinstance(arr, float)
-                                            or isinstance(arr, int)):
-            # NOTE: Apply precision for the normalized quaternion.
-            if precision == np.inf:
-                vars.set(str(arr))
-            else:
-                s = f"{arr:.{precision}f}"
-                vars.set(s)
-            return
-
-        elif isinstance(vars, list) and isinstance(arr, np.ndarray):
-            assert len(vars) == len(arr), "vars and values need to be of same size."
-
-            for i in range(len(vars)):
-                BaseParamFrame.update_vars(vars[i], arr[i], precision=precision) 
-            return
-
-        else:
-            print(f"Unsupported type for vars: {type(vars)}")
-            print(vars)
-            print(arr)
-            raise TypeError(f"Unsupported type for vars: {type(vars)}")
 
 
     def update_values(self, param=None):
@@ -173,17 +119,15 @@ class BaseParamFrame(tk.Frame):
             param = self.param
 
         for key in param.keys():
-            val = param[key]
-            if isinstance(val, Rotation):
-                BaseParamFrame.update_vars(self.vars[key], val.as_quat())
-            else:
-                BaseParamFrame.update_vars(self.vars[key], val)
+            self.set_var(key)
+
 
     def add_divider(self, frame=None) -> None:
         """
             Adds a simple line as a divider to the frame.
         """
-        frame = frame if frame is not None else self.canvas
+        frame = frame if frame is not None else self
+        # div = tk.Frame(self, bg="black")
         div = tk.Frame(frame, bg="black")
         div.pack(side="top", fill="x", pady=2)
 
@@ -243,17 +187,6 @@ class BaseParamFrame(tk.Frame):
                 txt = text
             self.add_list_field(txt, r, frame)
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    arr = np.array([
-        [[1.0, 1.0, 1.0], [1.0, 5.0, 1.0], [1.0, 1.0, 1.0]],
-        [[4.0, 11.0, 1.0], [1.0, 2.0, 1.0], [1.0, 5.0, 1.0]],
-        [[1.0, 1.4, 1.0], [5.0, 1.0, 1.0], [1.0, 1.0, 1.0]],
-        [[1.0, 1.0, 1.0], [4.0, 1.0, 1.0], [1.3, 4.2, 1.0]],
-    ])
-    test = BaseParamFrame._create_vars_from_arr(arr)
-    test_out = BaseParamFrame._get_arr_from_vars(test)
 
-    print(test)
-    print(test_out)
+
 

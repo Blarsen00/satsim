@@ -10,6 +10,8 @@ class Magnetorquer(Actuator):
     # TODO: Calculate energy output from current etc.
     # TODO: Calculate torque from current available
 
+    name: str = "Magnetorquer"
+
     # No use for these at this moment
     maxTorque: float = 1.0
     scalingFactor: float = 1.0
