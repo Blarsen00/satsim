@@ -62,6 +62,10 @@ class Simulate:
         return w
 
     @staticmethod
+    def quaternion_derivate(q: Rotation, w: np.ndarray):
+        pass
+
+    @staticmethod
     def calculate_attitude(rot: Rotation, w: np.ndarray, dt: float):
         assert type(rot) is Rotation
         assert type(w) is np.ndarray and w.shape == (3,)
