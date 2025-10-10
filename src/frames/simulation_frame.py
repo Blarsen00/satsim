@@ -104,6 +104,11 @@ class SimulationFrame(tk.Frame):
         self.update_anim(0)
         self.anim_obj.fig.canvas.draw()
 
+    def step(self):
+        self.act_sys_frame.update()
+        self.update_anim(0)
+        self.anim_obj.fig.canvas.draw()
+
     def draw_control_bar(self, frame: tk.Frame):
         self.start_btn = tk.Button(frame, text="Start", command=lambda: self.start_anim())
         # self.start_btn = tk.Button(frame, text="Start", command=self.anim_obj.start_anim)
@@ -119,6 +124,9 @@ class SimulationFrame(tk.Frame):
         # self.reset_btn = tk.Button(frame, text="Reset", command=self.anim_obj.reset_anim)
         # self.reset_btn = tk.Button(frame, text="Reset", command=self.animator.reset)
         self.reset_btn.pack(side=tk.LEFT)
+
+        self.step_btn = tk.Button(frame, text="Step", command=lambda: self.step())
+        self.step_btn.pack(side=tk.LEFT)
 
         self.randomize_btn = tk.Button(frame, text="Randomize", command=self.randomize)
         self.randomize_btn.pack(side=tk.LEFT)
@@ -179,7 +187,16 @@ class SimulationFrame(tk.Frame):
         # self.animator.reset()
 
 
-if __name__ == '__main__':
+
+def test_desaturation():
     root = tk.Tk()
+    sim_frame = SimulationFrame(root)
+    for rw in sim_frame.anim_obj.sat.actuator_system.reaction_wheels:
+        rw.w = 10
+    test_page(root, sim_frame)
+
+if __name__ == '__main__':
+    # root = tk.Tk()
     # test_page(root, SimulationFrame(root))
-    test_page(root, SimulationFrame(root, create_simulation()))
+    # test_page(root, SimulationFrame(root, create_simulation()))
+    test_desaturation()
