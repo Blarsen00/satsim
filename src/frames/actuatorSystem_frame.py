@@ -23,9 +23,13 @@ class ActuatorSystemFrame(tk.Frame):
                  actuator_system: Optional[ActuatorSystem]=None):
         super().__init__(parent)
         self.actuator_system = actuator_system if actuator_system is not None else ActuatorSystem()
-        self.vars: List[Dict[str, StringVar]]= [
+        self.vars_rw: List[Dict[str, StringVar]]= [
             {key: tk.StringVar(value=act.data[key][-1]) for key in act.data.keys() if key != "time"} 
-            for act in self.actuator_system.actuators
+            for act in self.actuator_system.reaction_wheels
+        ]
+        self.vars_mqt: List[Dict[str, StringVar]]= [
+            {key: tk.StringVar(value=act.data[key][-1]) for key in act.data.keys() if key != "time"} 
+            for act in self.actuator_system.magnetorquers
         ]
 
         self.draw_frame()
@@ -37,7 +41,7 @@ class ActuatorSystemFrame(tk.Frame):
         value_frame.pack(side="left", fill="x", padx=1, pady=1)
         plot_frame.pack(side="left", fill="x", padx=1, pady=1)
 
-        self.draw_values(value_frame)
+        self.draw_actuators(value_frame)
         # self.draw_plots(value_frame)
 
     def draw_plots(self, frame: tk.Frame):
@@ -68,21 +72,44 @@ class ActuatorSystemFrame(tk.Frame):
             canvas_widget.pack(side="top", fill="both", expand=True)
 
 
-    def draw_values(self, frame: tk.Frame):
-        for i, act in enumerate(self.actuator_system.actuators):
+    def draw_actuators(self, frame: tk.Frame):
+
+        for i, act in enumerate(self.actuator_system.reaction_wheels):
+            rw_frame = tk.Frame(frame)
+            rw_frame.grid(row=i+1, column=0, padx=5, pady=2)
+
             # NOTE: Divide axis by the smallest factor that is not 0 to get a nicer displayed axis
             ax = 1 / np.min([abs(x) for x in act.axis if x != 0.0]) * act.axis
-            info_label = tk.Label(frame,
-                                  bg="red",
+            info_label = tk.Label(rw_frame,
+                                  bg="cyan",
                                   text=f"{i+1}: {act.name} -> ({', '.join([f'{x:.2f}' for x in ax])} )")
             info_label.pack(side="top", fill="x")
 
             # Create a frame to hold the display values
-            values_frame = tk.Frame(frame)
+            values_frame = tk.Frame(rw_frame)
             values_frame.pack(side="top", fill="x")
-            self.create_values(values_frame, act, self.vars[i])
+            self.create_values(values_frame, act, self.vars_rw[i])
 
-            div = tk.Frame(frame, bg="black")
+            div = tk.Frame(rw_frame, bg="black")
+            div.pack(side="top", fill="x", pady=2)
+
+        for i, mqt in enumerate(self.actuator_system.magnetorquers):
+            mqt_frame = tk.Frame(frame)
+            mqt_frame.grid(row=i+1, column=1, sticky="n", padx=5, pady=2)
+
+            # NOTE: Divide axis by the smallest factor that is not 0 to get a nicer displayed axis
+            ax = 1 / np.min([abs(x) for x in mqt.axis if x != 0.0]) * mqt.axis
+            info_label = tk.Label(mqt_frame,
+                                  bg="magenta",
+                                  text=f"{i+1}: {mqt.name} -> ({', '.join([f'{x:.2f}' for x in ax])} )")
+            info_label.pack(side="top", fill="x")
+
+            # Create a frame to hold the display values
+            values_frame = tk.Frame(mqt_frame)
+            values_frame.pack(side="top", fill="x")
+            self.create_values(values_frame, mqt, self.vars_mqt[i])
+
+            div = tk.Frame(mqt_frame, bg="black")
             div.pack(side="top", fill="x", pady=2)
 
 
@@ -90,13 +117,22 @@ class ActuatorSystemFrame(tk.Frame):
         """ Update the values according to the values of the 
             actuators.
         """
-        for i, act in enumerate(self.actuator_system.actuators):
+        # NOTE: Yank implementation but its fine with just 2 types of actuators
+        for i, act in enumerate(self.actuator_system.reaction_wheels):
             for key in act.data.keys():
                 if key == "time":
                     continue
                 value = act.data[key][-1]
                 txt = "{:.7f}".format(value)
-                self.vars[i][key].set(txt)
+                self.vars_rw[i][key].set(txt)
+
+        for i, act in enumerate(self.actuator_system.magnetorquers):
+            for key in act.data.keys():
+                if key == "time":
+                    continue
+                value = act.data[key][-1]
+                txt = "{:.7f}".format(value)
+                self.vars_mqt[i][key].set(txt)
 
     @staticmethod
     def create_actuator_menu(frame: tk.Frame,
@@ -280,11 +316,12 @@ class ActuatorSystemParameterFrame(tk.Frame):
         for widget in self.winfo_children():
             widget.destroy()
         self.draw_frame()
-        print(self.sys)
+        # print(self.sys)
 
     def reset(self):
         self.sys = deepcopy(self.original)
         self.redraw()
+
 
     def get_obj(self) -> ActuatorSystem:
         return self.sys

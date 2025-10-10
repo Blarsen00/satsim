@@ -34,6 +34,9 @@ class Satellite:
     J: np.ndarray = np.identity(3) * 0.1        # Inertia matrix
     H: np.ndarray = np.zeros((3, 3))            # Angular momentum
 
+    # Magnetic vector in inertial frame
+    b0: np.ndarray = np.array([0.0, 0.0, 1.0]) * 65e-6
+
     satrec = BIOSAT
     energy: int = 100
 
@@ -47,8 +50,8 @@ class Satellite:
         else:
             self.initial_state = PhysicalState()
 
-        # self.actuator_system = actuator_system if actuator_system is not None else ActuatorSystem()
-        self.actuator_system = ActuatorSystem.init_base_rw_system()
+        self.actuator_system = actuator_system if actuator_system is not None else ActuatorSystem()
+        # self.actuator_system = ActuatorSystem.init_base_rw_system()
 
         # SGP4 model
         self.saterec = BIOSAT if satrec is None else satrec
@@ -56,11 +59,25 @@ class Satellite:
 
     def reset(self):
         self.state = deepcopy(self.initial_state)
+        self.actuator_system.reset()
 
 
     def load_satellite_parameters(self, state):
         self.initial_state = deepcopy(state)
         self.state = state
+
+    def get_magnetic_field_vector(self, **kwargs):
+        """ Return the magnetic field vector in the BODY frame. Many options
+            for how to calculate this, but this implementation will be simple 
+            and return a vector of constant magnitude and orientation in the
+            inertial frame.
+        """
+        # NOTE: Magnetic field vector in some inertial frame. Will not change its direction or 
+        # magnitude. The magnitude of Earth's magnetic field at its surface ranges from 25 to 65 μT
+        B_dir: np.ndarray = np.array([1.0, 1.0, 1.0])
+        B: np.ndarray = B_dir * 65e-6 / np.linalg.norm(B_dir)
+
+        return self.state.rot.as_matrix() @ B
 
 
 if __name__ == '__main__':

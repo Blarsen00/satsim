@@ -9,44 +9,27 @@ from animation import BaseAnimation
 from collections import deque
 
 class ReactionWheel(Actuator):
-    """
-        Handy resource: https://www.researchgate.net/publication/263083066_Torque_and_Speed_Control_Loops_of_a_Reaction_Wheel
+    """ Handy resource: 
+        https://www.researchgate.net/publication/263083066_Torque_and_Speed_Control_Loops_of_a_Reaction_Wheel
     """
     name: str = "Reaction Wheel"
-
-    # TODO: Change the variables to those that match the hardware
-    # State variables
-    # J: np.ndarray = np.eye(3) * 1.53e-3 # Inertia matrix
-    # w: float = 0.0                      # Angular velocity
-
-    # TODO: Change the variables to those that match the hardware
-    # Damping coefficients
-    # dv: float = 4.83e-6                 # Coloumb damping coefficient
-    # dc: float = 0.8795e-3               # Viscous damping coefficient
-
-    # TODO: Change the variables to those that match the hardware
-    # Motor model
-    # km: float = 0.00228
-    # max_I: float = 1.0
-    # max_rpm: float = 5000.0
 
     def __init__(self, axis: Optional[np.ndarray] = None) -> None:
         super().__init__(axis)
 
-        # Initialize ALL mutable attributes and parameter defaults here
         # TODO: Find the most reasonable default values
         self.J: np.ndarray = np.eye(3) * 1.53e-3
-        self.w: float = 0.0
-        self.dv: float = 4.83e-6
-        self.dc: float = 0.8795e-3
-        self.km: float = 0.00228
+        self.w: float = 0.0                         # rad/s
+        self.dv: float = 4.83e-6                    # Coloumb damping coefficient
+        self.dc: float = 0.8795e-3                  # Viscous damping coefficient
+        self.km: float = 0.00228                    # Relation between current and torque
         self.max_I: float = 1.0
 
         # NOTE: Main params are displayed primarily, params are the parameters
         # one can choose if the options are expanded and cover all parameters.
-        self._main_params = {"axis": "Axis: ",
-                             "max_I": "Max current (A): ",
-                             "w": "Angular rate(rad/s)"}
+        # self._main_params = {"axis": "Axis: ",
+        #                      "max_I": "Max current (A): ",
+        #                      "w": "Angular rate(rad/s)"}
         self._params = ["axis", "w", "max_I", "km", "dv", "dc", "J"]
 
         # Store inverse so it isn't necessary to calculate it at each iteration
@@ -69,6 +52,10 @@ class ReactionWheel(Actuator):
 
 
     def get_rpm(self, w: Optional[float]=None):
+        """ Convert rad/s to rpm. If no angular velocity provided, 
+            then the angur rate of the reaction wheel is used. More
+            used to get the rpm of the reaction wheel than conversion.
+        """
         w = w if w is not None else self.w
         return w * 30 / np.pi
 
@@ -85,46 +72,47 @@ class ReactionWheel(Actuator):
             0 = I_max km - dv w - dc
             w = (I_max km - dc) / dv                (rad/s)
         """
-        # max_I = max_I if max_I is not None else cls.max_I
-        # km = km if km is not None else cls.km
-        #
-        # dc = dc if dc is not None else cls.dc
-        # dv = dv if dv is not None else cls.dv
 
         w = (km * max_I - dc) / (dv)
-        w = Actuator.saturate(w, minimum=0.0)
+        w = Actuator.saturate(w, minimum=0.0)   # I cannot remember why i saturate here, but I'm sure it's well reasoned
 
+        # Convert from rad/s to rpm
         return w * 30 / np.pi
 
-    @classmethod
-    def drag(cls, w: float, dc:Optional[ float ]=None, dv:Optional[ float ]=None):
-        """ Wheel friction modeled as a sum of viscous and Coloumb components. (4.55)
+    @staticmethod
+    def drag(w: float, dc:float, dv: float):
+        """ Wheel friction modeled as a sum of viscous and Coloumb components. (4.55).
+            This model does not work particularly well for low velocities, especially when
+            crossing zero speed. When the speed is 0, this model will still give a friction 
+            force that needs to be overcome by the motor, which is obviously nonesense.
         """
-        dc = dc if dc is not None else cls.dc
-        dv = dv if dv is not None else cls.dv
 
         drag = dv * w + dc * np.sign(w)
         return drag
 
-    @classmethod
-    def motor_torque(cls,
+    def motor_torque(self,
                      tau: float,
                      km: Optional[float]=None,
                      max_I: Optional[float]=None,
                      dt: float=0.1) -> Tuple[float, float]:
         """
             Torque provided by the motor to the wheels. Assumed to be proportional 
-            to the applied electrical current to the motor.
-            T_m = k_m I
-        """
-        km = km if km is not None else cls.km
-        max_I = max_I if max_I is not None else cls.max_I
+            to the applied electrical current to the motor, and is saturated within
+            the current limits of the motor as specified by the class instance.
 
-        # Wheel is saturated at max rpm and cannot spin faster
+            T_m = k_m I
+
+            If parameters are not specified, then the parameters of the class instance
+            is used. 
+        """
+        km = km if km is not None else self.km
+        max_I = max_I if max_I is not None else self.max_I
+
+        # Saturate the current within the capabilities of the motor
         I = tau / km
         I = Actuator.saturate(I, max_I, -max_I)
 
-        # Line to force the reaction wheel to saturation
+        # Line to force the reaction wheel to saturation, currently depreciated
         # I *= int(self.w <= self.max_w)
 
         # Torque from wheel
@@ -156,7 +144,7 @@ class ReactionWheel(Actuator):
 
         return T
 
-    def apply_torque(self, tau: float, dt: float=0.1):
+    def apply_torque(self, tau: float, dt: float=0.1, **kwargs):
         T = self.wheel_torque(tau, dt)
 
         # Log the available data
@@ -167,13 +155,6 @@ class ReactionWheel(Actuator):
         self.log_data("torque", T)
 
         return T
-
-
-##################### Animation part of the reactionwheel ####################
-# class ReactionWheelAnimation(ActuatorAnimation):
-#     def __init__(self, actuator) -> None:
-#         super().__init__(actuator)
-#         self.color="blue"
 
 
 def test_reaction_wheel():

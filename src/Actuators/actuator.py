@@ -39,7 +39,7 @@ class Actuator():
         file.close()
 
     @abstractmethod
-    def apply_torque(self, tau: float, dt: float=0.1):
+    def apply_torque(self, tau: float, dt: float=0.1, **kwargs):
         """ Calculate and return the torque from the actuator
             provided referece torque.
         """

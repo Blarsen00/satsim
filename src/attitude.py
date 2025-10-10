@@ -90,8 +90,12 @@ class AttitudeAnimation(BaseAnimation):
 
     def update_anim(self, frame, dt=0.1):
         # Calculate
-        L = self.controller.output(self.sat.state, self.ref.state, J=self.sat.J)
-        L_applied = self.sat.actuator_system.apply_torque(L)
+        u = self.controller.output(self.sat.state, self.ref.state, J=self.sat.J)
+        L_applied = self.sat.actuator_system.apply_torque(u,
+                                                          b0=self.sat.b0,
+                                                          R=self.sat.state.rot.as_matrix(),
+                                                          kp=2.0,
+                                                          w=self.sat.state.w)
         # print(L)
         # print(L, L_applied)
         self.sat.state = Simulate.update_state(L_applied,
