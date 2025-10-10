@@ -37,6 +37,7 @@ class App(tk.Tk):
         self.container.pack(fill="both", expand=True)
 
         self.ani_obj: AttitudeAnimation = create_simulation()
+        print(self.ani_obj.sat.actuator_system)
         self.frames = {"Simulation": SimulationFrame(self.container, self.ani_obj),
                        # "Control": ControlFrame(self.container),
                        "Controller": ControllerFrame(self.container),
@@ -48,6 +49,7 @@ class App(tk.Tk):
         self.init_menu()
         self.active_frame: tk.Frame = self.frames["Simulation"]
         self.active_frame.pack(side=tk.TOP, fill="both", expand=True)
+        self.frames["Simulation"].reset()
 
     def init_menu(self):
         tk.Button(self.menu_bar, 
