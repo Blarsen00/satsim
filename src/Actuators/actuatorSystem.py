@@ -4,7 +4,7 @@ from Actuators.actuator import Actuator, ActuatorAnimation
 from Actuators.reactionwheel import ReactionWheel
 from Actuators.magnetorquer import Magnetorquer
 from animation import BaseAnimation
-from typing import List, MutableSequence, Sequence, Optional, Type, Self
+from typing import List, MutableSequence, Sequence, Optional, Type
 
 import misc
 
@@ -52,7 +52,7 @@ class ActuatorSystem:
     # TODO: Implement desaturation of reaction wheels
 
     @classmethod
-    def init_base_rw_system(cls) -> Self:
+    def init_base_rw_system(cls):
         base_rw = [
             ReactionWheel(axis=np.array([1.0, 0.0, 0.0])),
             ReactionWheel(axis=np.array([0.0, 1.0, 0.0])),
