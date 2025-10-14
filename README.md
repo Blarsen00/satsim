@@ -1,6 +1,50 @@
 # Satellite Attitude Simulation
 
-The following project is an implementation of a simulation environment for satellite attitude and control logic. 
+The following project is a simulation environment for satellite attitude and control logic. The program allows for testing of how different controllers and actuator setups affect the attitude control of a satellite. 
+
+
+## Installation
+
+Clone the repository: 
+
+```
+git clone https://github.com/Blarsen00/satsim
+```
+
+Setup the required environment, for example with a virtual environment: 
+
+```
+cd satsim
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+The virtual environment should now be active, and after going to the source folder `cd src`, the application can be ran with the following command: 
+```
+python3 -m app
+```
+
+# TODO 
+
+1. Properly document the implemented code
+    - Decide on a convention (Numpy docstring of Google style)
+    - Properly document each and every class and function according to the chosen documentation
+    - Use Sphinx to generate documentation from the docstrings
+    - Delete obsolete files and code
+    - Make an updated requirements.txt file
+    - Add documentation about the satellite dynamics and physics in play.
+    - Document the shortcomings of the application
+        - Currently only true state estimates are fed into the controllers
+        - No environmental disturbances are currently implemented
+        - The integration scheme is direct Euler
+2. Fix the double drawing issue where there are extra axis for the satellite being drawn
+3. Fix the modifications to the actuator system
+    - Changing the actuator systems in any way will currently freeze the dashboard in the simulation frame
+    - The option button does not currently show a frame in which one can change the settings for the actuator in question
+    - No way to add new magnetorquers to the actuator system at the moment
+4. Add the reference for the pointing reference where each axis is pointing at two targets simultaneously and document the method properly.
+
 
 ## Satellite
 
@@ -72,11 +116,11 @@ The reaction wheel is modeled om a way where the current available to the motors
         return min(maximum, max(value, minimum))
 ```
 
-This gives $-I_{max} \leq I \leq I_max$. The reaction wheels is otherwise considered to be perfect as of writing, but implementing other disturbances could be of interest at some point. With the current being the only limiting factor of the torque output of the motor, the response does seem fairly realistic. The current limit imposes a limit to the possible angular rate achievable by the reaction wheel as the wheel is unable to overcome the drag. This is expressed as follows.
+This gives $-I_{max} \leq I \leq I_{max}$. The reaction wheels is otherwise considered to be perfect as of writing, but implementing other disturbances could be of interest at some point. With the current being the only limiting factor of the torque output of the motor, the response does seem fairly realistic. The current limit imposes a limit to the possible angular rate achievable by the reaction wheel as the wheel is unable to overcome the drag. This is expressed as follows.
 
 $$
 \begin{align}
-    \tau &= I k_m - d_v \omega - d_c \text{sign}(\omega) \hfill \text{Set $\tau = 0$ and $\omega > 0$} \\
+    \tau &= I k_m - d_v \omega - d_c \text{sign}(\omega) \quad \quad \text{Set $\tau = 0$ and $\omega > 0$} \\
     0 &= I k_m - d_v \omega_{max} - d_c \\
     \omega_{max} &= \frac{I k_m - d_c}{d_v}
 \end{align}
@@ -90,7 +134,7 @@ The following plot shows how the torque produced by the reaction wheel relates t
 
 ## Magnetorquers
 
-Magnetorquers produce torque based on its magnetic dipole $\mathbf{m}$, and the magnetic field vector $\mathbf{B}$as follows: 
+Magnetorquers produce torque based on its magnetic dipole $\mathbf{m}$, and the magnetic field vector $\mathbf{B}$ as follows: 
 
 $$
     \tau = \mathbf{m} \times \mathbf{B}
