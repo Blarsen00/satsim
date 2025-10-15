@@ -1,5 +1,5 @@
 import tkinter as tk
-from typing import Optional
+from typing import Optional, Dict, Any
 import matplotlib.pyplot as plt
 
 # Simulation
@@ -10,9 +10,6 @@ from frames.actuatorSystem_frame import ActuatorSystemFrame, ActuatorSystemParam
 from frames.satellite_frame import SatelliteParamFrame
 from reference import BaseReference
 from simulation import PhysicalState
-# from controller import Controller, PDController
-# from reference import BaseReference
-# from satellite import Satellite
 
 # Frames
 from frames.base_frame import BaseParamFrame
@@ -24,10 +21,36 @@ from frames.plotting_frame import AniParamFrame
 
 
 class App(tk.Tk):
+    """
+    The main application window for the Satellite Attitude Simulation GUI.
+
+    This class inherits from :class:`tkinter.Tk` and manages the application's layout, 
+    navigation (using a menu bar), and state synchronization between the user 
+    interface frames and the core simulation object.
+
+    Attributes
+    ----------
+    menu_bar : :class:`tkinter.Frame`
+        The top frame containing the navigation buttons.
+    container : :class:`tkinter.Frame`
+        The main area frame where different content pages (frames) are packed.
+    ani_obj : :class:`simulation_modules.AttitudeAnimation`
+        The core simulation object containing the satellite, reference, controller, 
+        and time parameters. Initialized via ``create_simulation()``.
+    frames : dict of (:class:`str`, :class:`tkinter.Frame`)
+        A dictionary mapping frame names (e.g., "Simulation", "Controller") to their 
+        respective :class:`tkinter.Frame` instances.
+    active_frame : :class:`tkinter.Frame`
+        The currently displayed content frame.
+    """
     def __init__(self):
+        """
+        Initializes the application window, loads the simulation, and sets up the GUI structure.
+        """
         super().__init__()
         self.geometry("1400x800")
         self.title("Satellite Attitude Simulation")
+        # Set protocol to handle proper cleanup on window close
         self.protocol('WM_DELETE_WINDOW', self.close_app)
 
         self.menu_bar = tk.Frame(self, bg="lightgray")
@@ -38,26 +61,31 @@ class App(tk.Tk):
 
         self.ani_obj: AttitudeAnimation = create_simulation()
         print(self.ani_obj.sat.actuator_system)
-        self.frames = {"Simulation": SimulationFrame(self.container, self.ani_obj),
-                       # "Control": ControlFrame(self.container),
-                       "Controller": ControllerFrame(self.container),
-                       "Reference": ReferenceFrame(self.container, self.ani_obj.ref),
-                       "Satellite": SatelliteParamFrame(self.container, self.ani_obj.sat),
-                       "Actuators": ActuatorSystemParameterFrame(self.container, self.ani_obj.sat.actuator_system),
-                       "Params" : AniParamFrame(self.container, TimeParameters())}
+        
+        # Initialize all major frames/pages
+        self.frames: Dict[str, Any] = { 
+            "Simulation": SimulationFrame(self.container, self.ani_obj),
+            "Controller": ControllerFrame(self.container),
+            "Reference": ReferenceFrame(self.container, self.ani_obj.ref),
+            "Satellite": SatelliteParamFrame(self.container, self.ani_obj.sat),
+            "Actuators": ActuatorSystemParameterFrame(self.container, self.ani_obj.sat.actuator_system),
+            "Params" : AniParamFrame(self.container, TimeParameters())
+        }
 
         self.init_menu()
+        
+        # Set initial frame to "Simulation"
         self.active_frame: tk.Frame = self.frames["Simulation"]
         self.active_frame.pack(side=tk.TOP, fill="both", expand=True)
         self.frames["Simulation"].reset()
 
     def init_menu(self):
+        """
+        Initializes the navigation menu bar with buttons for switching between application frames.
+        """
         tk.Button(self.menu_bar, 
                   text="Simulation",
                   command=lambda: self.show_frame("Simulation")).pack(side=tk.LEFT)
-        # tk.Button(self.menu_bar,
-        #           text="Control",
-        #           command=lambda: self.show_frame("Control")).pack(side=tk.LEFT)
         tk.Button(self.menu_bar,
                   text="Controller",
                   command=lambda: self.show_frame("Controller")).pack(side=tk.LEFT)
@@ -75,25 +103,49 @@ class App(tk.Tk):
                   command=lambda: self.show_frame("Params")).pack(side=tk.LEFT)
 
     def close_app(self):
+        """
+        Handles the application shutdown protocol.
+
+        Closes all open Matplotlib figures and then destroys the main Tkinter window.
+        """
+        # Ensure all Matplotlib figures are closed before destroying the GUI
         plt.close("all")
         self.destroy()
 
-    def show_frame(self, page_name):
+    def show_frame(self, page_name: str):
+        """
+        Switches the currently displayed frame in the main container.
+
+        The currently active frame is hidden, the new frame is packed, and 
+        :meth:`update_params` is called to synchronize simulation state.
+
+        Parameters
+        ----------
+        page_name : str
+            The key of the frame to display, corresponding to a key in :attr:`frames`.
+        """
         self.active_frame.pack_forget()
         self.active_frame = self.frames[page_name]
         self.active_frame.pack(side=tk.TOP, fill="both", expand=True)
         self.update_params()
 
     def update_params(self):
+        """
+        Reads parameters from the various GUI frames and updates the main 
+        simulation object (:attr:`ani_obj`).
+
+        This method synchronizes the state of the Controller, Time Parameters, 
+        Reference Frame, Satellite properties, and Actuator System between 
+        the editable GUI elements and the core simulation logic.
+        """
+        # Update components of the core simulation object
         self.ani_obj.controller = self.frames["Controller"].get_controller()
         self.ani_obj.time = self.frames["Params"].get_obj()
         self.ani_obj.ref = self.frames["Reference"].get_obj()
 
-        # Rebuild the satellite object
+        # Rebuild the satellite object and assign its actuator system
         self.ani_obj.sat = self.frames["Satellite"].get_obj()
         self.ani_obj.sat.actuator_system = self.frames["Actuators"].get_obj()
-
-        # self.frames["Simulation"].redraw()
 
 
 class ControlFrame(tk.Frame):
