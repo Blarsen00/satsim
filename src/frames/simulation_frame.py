@@ -16,10 +16,25 @@ from misc import test_page
 
 
 class SimulationFrame(tk.Frame):
+    """
+    A Tkinter frame responsible for hosting and controlling the attitude simulation.
+
+    It integrates the Matplotlib 3D attitude animation, displays the current 
+    satellite/reference state values, and provides a control bar for simulation 
+    management (start, stop, reset, save, etc.).
+    """
     def __init__(self, 
                  parent,
                  anim_obj: Optional[AttitudeAnimation]=None):
+        """
+        Initializes the SimulationFrame.
 
+        Args:
+            parent: The parent widget (Tkinter container).
+            anim_obj (Optional[AttitudeAnimation]): The AttitudeAnimation object 
+                                                    to display and control. If None, 
+                                                    a new one is created.
+        """
         super().__init__(parent)
 
 
@@ -65,6 +80,10 @@ class SimulationFrame(tk.Frame):
         # print(self.anim_obj.controller)
 
     def create_anim(self):
+        """
+        Initializes the Matplotlib FuncAnimation object for the simulation plot.
+        Sets the animation to paused initially.
+        """
         self.animation = FuncAnimation(
             self.anim_obj.fig,
             partial(self.update_anim),
@@ -79,23 +98,51 @@ class SimulationFrame(tk.Frame):
         self.pause = True
 
     def init_anim(self):
+        """
+        Calls the initialization function for the attitude animation.
+
+        Returns:
+            The initial graphics objects for blitting.
+        """
         return self.anim_obj.init_anim()
 
     def update_anim(self, frame):
+        """
+        The main update function called by FuncAnimation for each frame.
+
+        It advances the simulation state and updates the display frames
+        for actuator system and satellite state comparison.
+
+        Args:
+            frame: The current frame number (time step index).
+
+        Returns:
+            The updated graphics objects for blitting.
+        """
         output = self.anim_obj.update_anim(frame)
         self.act_sys_frame.update_values()
         self.sat_comp_frame.update_values()
         return output
 
     def start_anim(self):
+        """
+        Resumes the Matplotlib animation.
+        """
         self.pause = False
         self.animation.resume()
 
     def stop_anim(self):
+        """
+        Pauses the Matplotlib animation.
+        """
         self.pause = True
         self.animation.pause()
 
     def reset(self):
+        """
+        Resets the simulation to the initial state, updates the control frames,
+        stops the animation, and redraws the initial plot.
+        """
         self.anim_obj.reset_anim()
         self.act_sys_frame.update()
 
@@ -105,11 +152,22 @@ class SimulationFrame(tk.Frame):
         self.anim_obj.fig.canvas.draw()
 
     def step(self):
+        """
+        Performs a single step of the simulation (moves to the next frame), 
+        updates the control frames, and redraws the plot.
+        """
         self.act_sys_frame.update()
         self.update_anim(0)
         self.anim_obj.fig.canvas.draw()
 
     def draw_control_bar(self, frame: tk.Frame):
+        """
+        Draws the control buttons (Start, Stop, Reset, Step, Randomize, Reference, Save) 
+        at the bottom of the frame.
+
+        Args:
+            frame (tk.Frame): The Tkinter frame to place the controls in.
+        """
         self.start_btn = tk.Button(frame, text="Start", command=lambda: self.start_anim())
         # self.start_btn = tk.Button(frame, text="Start", command=self.anim_obj.start_anim)
         # self.start_btn = tk.Button(frame, text="Start", command=self.animator.start)
@@ -142,15 +200,18 @@ class SimulationFrame(tk.Frame):
 
         self.file_path: str = ""
         self.save_as_btn = tk.Button(frame,
-                                  text="Save as",
-                                  command=self.save_as)
+                                     text="Save as",
+                                     command=self.save_as)
         self.save_btn = tk.Button(frame,
-                                  text="Save",
-                                  command=self.save)
+                                     text="Save",
+                                     command=self.save)
         self.save_btn.pack(side=tk.RIGHT)
         self.save_as_btn.pack(side=tk.RIGHT)
 
     def save_as(self):
+        """
+        Prompts the user for a file path to save the animation and then calls save().
+        """
         file_path: str = filedialog.asksaveasfilename()
         if file_path == "":
             return
@@ -159,16 +220,24 @@ class SimulationFrame(tk.Frame):
         self.save()
 
     def save(self):
+        """
+        Saves the animation to the determined file path. If no path is set, 
+        it first prompts the user via save_as().
+        """
         if self.file_path == "":
             return self.save_as()
         # self.anim_obj.animation.save(self.file_path, 
         self.animation.save(self.file_path, 
-                                 writer="pillow",
-                                 fps=int(1000/self.anim_obj.time.interval))
-                                 # fps=int(1000/self.anim_obj.parameters_animation.interval))
+                            writer="pillow",
+                            fps=int(1000/self.anim_obj.time.interval))
+                            # fps=int(1000/self.anim_obj.parameters_animation.interval))
 
 
     def set_ref(self):
+        """
+        Toggles the drawing of the reference object in the attitude plot based on 
+        the 'Reference' checkbutton state.
+        """
         self.anim_obj.draw_reference = bool(self.reference.get())
         self.anim_obj.flush_plot()
         self.canvas.draw_idle()
@@ -180,6 +249,10 @@ class SimulationFrame(tk.Frame):
 
 
     def randomize(self):
+        """
+        Randomizes the initial attitude of both the satellite and the reference 
+        and resets the simulation.
+        """
         self.anim_obj.sat.state.randomize_attitude()
         self.anim_obj.ref.state.randomize_attitude()
         self.reset()
@@ -189,6 +262,10 @@ class SimulationFrame(tk.Frame):
 
 
 def test_desaturation():
+    """
+    A test function to run the SimulationFrame with pre-set reaction wheel speeds 
+    to test desaturation logic.
+    """
     root = tk.Tk()
     sim_frame = SimulationFrame(root)
     for rw in sim_frame.anim_obj.sat.actuator_system.reaction_wheels:
