@@ -8,11 +8,23 @@ import numpy as np
 
 
 class BaseParamFrame(tk.Frame):
-    """ Frame to build pages for setting paramters for classes. Inherit from 
-        this frame, and draw it. The rest should be handled by this foundation.
+    """
+    Foundation frame for building user interfaces designed for setting and
+    modifying class parameters using tkinter entry widgets.
 
-        @param: The parameters that should be modifiable by the frame. Dictionary
-            of str: float|np.ndarray
+    Inherit from this class and implement the abstract methods to create a
+    custom parameter page.
+
+    Attributes
+    ----------
+    base_width : int
+        Default width for labels.
+    base_padding_x : int
+        Default horizontal padding for elements.
+    base_padding_y : int
+        Default vertical padding for elements.
+    base_entry_width : int
+        Default width for entry widgets.
     """
     base_width: int = 30
     base_padding_x: int = 1
@@ -22,6 +34,17 @@ class BaseParamFrame(tk.Frame):
     def __init__(self,
                  parent,
                  param:Dict):
+        """
+        Initializes the BaseParamFrame.
+
+        Parameters
+        ----------
+        parent : tk.Widget
+            The parent tkinter widget (e.g., tk.Tk or tk.Frame).
+        param : Dict[str, float | np.ndarray | Rotation | int]
+            A dictionary containing the parameters to be displayed and modified.
+            Keys are parameter names (str), and values are the initial parameter data.
+        """
 
         super().__init__(parent)
         self.vars = {}
@@ -44,23 +67,52 @@ class BaseParamFrame(tk.Frame):
         self.draw_frame()
 
     @staticmethod
-    def _create_vars_from_arr(arr):
-        """ Recursively create an array of Stringvars that match 
-            the dimension of the array, and with the same value
-            arr.
+    def _create_vars_from_arr(arr: Any) -> Any:
+        """
+        Recursively creates a nested list of tk.StringVar objects that mirrors
+        the structure and initial values of a given scalar or numpy array.
+
+        Parameters
+        ----------
+        arr : Any
+            A scalar (float/int) or a nested numpy array.
+
+        Returns
+        -------
+        Any
+            A tk.StringVar if the input is a scalar, or a nested list of tk.StringVar
+            if the input is a numpy array.
         """
         if isinstance(arr, np.ndarray):
             return [BaseParamFrame._create_vars_from_arr(x) for x in arr]
         else:
             return tk.StringVar(value=str(arr))
 
-    def set_var(self, key: str):
+    def set_var(self, key: str) -> None:
+        """
+        Initializes a tk.StringVar or a nested list of tk.StringVar objects for a
+        specific parameter key based on the type of its associated value in `self.param`.
+
+        Handles float, int, numpy.ndarray, and scipy.spatial.transform.Rotation types.
+        Rotation objects are converted to quaternions (4-element arrays) before
+        creating the StringVars.
+
+        Parameters
+        ----------
+        key : str
+            The key of the parameter in `self.param` to initialize StringVars for.
+
+        Raises
+        ------
+        AssertionError
+            If the parameter value's type is not supported.
+        """
         val = self.param[key]
         assert isinstance(val, float) or isinstance(val, np.ndarray) \
-                                        or isinstance(val, np.floating) \
-                                        or isinstance(val, Rotation) \
-                                        or isinstance(val, int), \
-            f"Only floats and numpy arrays are supported, not {type(val)}"
+                             or isinstance(val, np.floating) \
+                             or isinstance(val, Rotation) \
+                             or isinstance(val, int), \
+            f"Only floats, integers, numpy arrays, and Rotation objects are supported, not {type(val)}"
 
         if isinstance(val, float) or isinstance(val, np.floating) or isinstance(val, int):
             self.vars[key] = tk.StringVar(value=str(val))
@@ -76,9 +128,25 @@ class BaseParamFrame(tk.Frame):
 
 
     @staticmethod
-    def _get_arr_from_vars(vars):
-        """ Recursively build a list of floats corresponding to 
-            the values in the list of stringvars.
+    def _get_arr_from_vars(vars: Any) -> Any:
+        """
+        Recursively extracts the numerical values from a nested list of tk.StringVar
+        objects, converting them to floats.
+
+        Parameters
+        ----------
+        vars : Any
+            A tk.StringVar object or a nested list of them.
+
+        Returns
+        -------
+        Any
+            A float if the input is a tk.StringVar, or a nested list of floats.
+
+        Raises
+        ------
+        ValueError
+            If any tk.StringVar contains a non-numeric string.
         """
         if isinstance(vars, tk.StringVar):
             try:
@@ -90,22 +158,30 @@ class BaseParamFrame(tk.Frame):
             return [BaseParamFrame._get_arr_from_vars(x) for x in vars]
 
     @abstractmethod
-    def draw_frame(self):
+    def draw_frame(self) -> None:
         """
-            The layout of the frame is determined in this function
+        Abstract method to be implemented by subclasses. This function defines
+        the specific layout and arrangement of labels and entry widgets for the
+        parameters on the frame.
         """
         pass
 
-    def redraw(self):
+    def redraw(self) -> None:
+        """
+        Updates the geometry and appearance of the frame.
+        """
         self.update()
         # for widget in self.winfo_children():
             # widget.destroy()
         # self.draw_frame()
 
     @abstractmethod
-    def reset(self):
-        """ Reset the parameters value to default values,
-            display them in the entries, and apply the change.
+    def reset(self) -> None:
+        """
+        Abstract method to be implemented by subclasses.
+
+        Resets the parameters to their default values, updates the entry fields
+        to reflect these defaults, and calls `apply()` to commit the changes.
         """
         # Reset default values in subclass
         self.update_values()
@@ -113,14 +189,27 @@ class BaseParamFrame(tk.Frame):
 
     @abstractmethod
     def get_obj(self) -> Any:
-        """ Each frame sets the parameter for some object or class 
-            and needs to implement this method for returning the object
-            upon request.
+        """
+        Abstract method to be implemented by subclasses.
+
+        Returns the object or class instance whose parameters are being configured
+        by this frame.
         """
         pass
 
-    def apply(self):
-        """ Store the values from the stringvars in the param dictionary.
+    def apply(self) -> None:
+        """
+        Extracts the numerical values from all tk.StringVar objects and updates
+        the corresponding entries in the `self.param` dictionary.
+
+        Handles conversion back to float, numpy.ndarray, or Rotation objects.
+        Rotation objects are normalized after conversion and their corresponding
+        StringVars are updated to display the normalized quaternion (with precision 3).
+
+        Raises
+        ------
+        TypeError
+            If the extracted value type does not match the expected type logic.
         """
         for key in self.param.keys():
             val = self._get_arr_from_vars(self.vars[key])
@@ -137,10 +226,31 @@ class BaseParamFrame(tk.Frame):
 
 
     @staticmethod
-    def update_vars(vars, arr, precision=np.inf):
+    def update_vars(vars: Any, arr: Any, precision: float=np.inf) -> None:
+        """
+        Recursively sets the values of tk.StringVar or nested lists of tk.StringVar
+        from a source scalar or array, applying optional precision formatting.
+
+        Parameters
+        ----------
+        vars : Any
+            A tk.StringVar object or a nested list of them (the target).
+        arr : Any
+            A scalar, float, int, or nested numpy array (the source values).
+        precision : float, optional
+            The number of decimal places to format the string to. If set to
+            `np.inf`, standard string conversion is used. Defaults to `np.inf`.
+
+        Raises
+        ------
+        AssertionError
+            If a list of StringVars and the source array are not the same size.
+        TypeError
+            If an unsupported type is encountered.
+        """
         if isinstance(vars, tk.StringVar) and \
             (isinstance(arr, np.floating) or isinstance(arr, float)
-                                            or isinstance(arr, int)):
+                                             or isinstance(arr, int)):
             # NOTE: Apply precision for the normalized quaternion.
             if precision == np.inf:
                 vars.set(str(arr))
@@ -163,9 +273,17 @@ class BaseParamFrame(tk.Frame):
             raise TypeError(f"Unsupported type for vars: {type(vars)}")
 
 
-    def update_values(self, param=None):
-        """ Update the values of the entries associated with each 
-            member of the parameter dataclass.
+    def update_values(self, param: Optional[Dict]=None) -> None:
+        """
+        Updates the content of all tk.StringVar objects to reflect the current
+        values stored in the parameter dictionary (`self.param` or the provided `param`).
+        This refreshes the content displayed in the entry widgets.
+
+        Parameters
+        ----------
+        param : Optional[Dict], optional
+            An optional dictionary of parameter values to use for updating.
+            If None, uses `self.param`. Defaults to None.
         """
         if param is None and self.param is None:
             return
@@ -179,12 +297,18 @@ class BaseParamFrame(tk.Frame):
             else:
                 BaseParamFrame.update_vars(self.vars[key], val)
 
-    def add_divider(self, frame=None) -> None:
+    def add_divider(self, frame: Optional[tk.Frame]=None) -> None:
         """
-            Adds a simple line as a divider to the frame.
+        Adds a simple black horizontal line as a visual divider to the canvas.
+
+        Parameters
+        ----------
+        frame : Optional[tk.Frame], optional
+            The frame to add the divider to. If None, uses `self.canvas`.
+            Defaults to None.
         """
         frame = frame if frame is not None else self.canvas
-        div = tk.Frame(frame, bg="black")
+        div = tk.Frame(frame, bg="black", height=1)
         div.pack(side="top", fill="x", pady=2)
 
 
@@ -193,8 +317,19 @@ class BaseParamFrame(tk.Frame):
                   text_var: tk.StringVar,
                   frame: Optional[tk.Frame]=None) -> None:
         """
-            Adds a simple Text and Entry row to the frame.
-            Entry Text: [    ]
+        Adds a label and a single entry field to the frame.
+
+        Layout: [Label] [Entry]
+
+        Parameters
+        ----------
+        text : str
+            The text label for the field.
+        text_var : tk.StringVar
+            The StringVar connected to the entry field.
+        frame : Optional[tk.Frame], optional
+            The frame to add the field to. If None, uses `self.canvas`.
+            Defaults to None.
         """
         return self.add_list_field(text, [text_var], frame=frame)
 
@@ -203,6 +338,21 @@ class BaseParamFrame(tk.Frame):
                        text: str,
                        text_var: List[tk.StringVar],
                        frame: Optional[tk.Frame]=None) -> None:
+        """
+        Adds a label followed by a horizontal list of entry fields (e.g., for a vector).
+
+        Layout: [Label] [Entry 1] [Entry 2] ...
+
+        Parameters
+        ----------
+        text : str
+            The text label for the list of fields.
+        text_var : List[tk.StringVar]
+            A list of StringVars, each connected to an entry field.
+        frame : Optional[tk.Frame], optional
+            The frame to add the fields to. If None, uses `self.canvas`.
+            Defaults to None.
+        """
         frame = self.canvas if frame is None else frame
         row = tk.Frame(frame)
         row.pack(side="top",
@@ -220,15 +370,35 @@ class BaseParamFrame(tk.Frame):
             tk.Entry(row,
                      width=self.base_entry_width,
                      textvariable=var).pack(side=tk.LEFT, 
-                                            fill="x",
-                                            pady=self.base_padding_y,
-                                            padx=self.base_padding_x)
+                                             fill="x",
+                                             pady=self.base_padding_y,
+                                             padx=self.base_padding_x)
 
 
     def add_array_field(self,
                         text: str,
                         text_vars: List[List[tk.StringVar]],
                         frame: Optional[tk.Frame]=None):
+        """
+        Adds a label and a grid of entry fields (e.g., for a matrix or 2D array).
+        The label is intended to be vertically centered next to the array rows.
+
+        Layout:
+        [     ] [Entry 1,1] [Entry 1,2] ...
+        [Label] [Entry 2,1] [Entry 2,2] ...
+        [     ] [Entry 3,1] [Entry 3,2] ...
+
+        Parameters
+        ----------
+        text : str
+            The main label text for the array.
+        text_vars : List[List[tk.StringVar]]
+            A nested list representing the array structure, where each inner list
+            corresponds to a row of entry fields.
+        frame : Optional[tk.Frame], optional
+            The frame to add the array to. If None, uses `self.canvas`.
+            Defaults to None.
+        """
 
         frame = self.canvas if frame is None else frame
         for i, r in enumerate(text_vars):
@@ -239,7 +409,7 @@ class BaseParamFrame(tk.Frame):
                      padx=self.base_padding_x)
 
             txt = ""
-            if i == (len(r) // 2):
+            if i == (len(text_vars) // 2):
                 txt = text
             self.add_list_field(txt, r, frame)
 
@@ -256,4 +426,3 @@ if __name__ == '__main__':
 
     print(test)
     print(test_out)
-
