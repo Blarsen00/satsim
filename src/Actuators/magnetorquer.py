@@ -37,11 +37,9 @@ class Magnetorquer(Actuator):
     name: str = "Magnetorquer"
 
     # No use for these at this moment
-    maxTorque: float = 1.0
-    scalingFactor: float = 1.0
+    # maxTorque: float = 1.0
+    # scalingFactor: float = 1.0
 
-    k: float = 1.0                  # Magnetic dipole scalar. k = n A => m = k * I
-    max_I: float = 1.0              # Max available current
 
     # NOTE: Magnetic field vector in some inertial frame. Will not change its direction or 
     # magnitude. The magnitude of Earth's magnetic field at its surface ranges from 25 to 65 μT
@@ -58,6 +56,9 @@ class Magnetorquer(Actuator):
             Inherited from :class:`Actuators.actuator.Actuator`.
         """
         super().__init__(axis)
+        self.k: float = 1.0                  # Magnetic dipole scalar. k = n A => m = k * I
+        self.max_I: float = 1.0              # Max available current
+        self._params = ["axis", "k", "max_I"]
 
         # NOTE: Log some dummy data for the actuator to display at start
         self.log_data("torque", 0)
