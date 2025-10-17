@@ -62,11 +62,11 @@ class Controller(ABC):
                ref: PhysicalState,
                **kwargs) -> np.ndarray:
         """
-        Abstract method for calculating the output torque vector $\mathbf{L}$.
+        Abstract method for calculating the output torque vector :math:`\\mathbf{L}`.
 
         This method takes the current (estimated) state, and a reference state
         and uses them to calculate the necessary control output, typically
-        a torque vector $\mathbf{L}$.
+        a torque vector :math:`\\mathbf{L}`.
 
         Parameters
         ----------
@@ -80,7 +80,7 @@ class Controller(ABC):
         Returns
         -------
         :class:`numpy.ndarray`
-            The calculated output torque vector $\mathbf{L}$, shape (3,).
+            The calculated output torque vector :math:`\\mathbf{L}`, shape (3,).
         """
         pass
 
@@ -98,22 +98,22 @@ class PDController(Controller):
     """
     Implements a simple Proportional-Derivative (PD) controller for attitude control.
 
-    The control law calculates the torque $\mathbf{L}$ based on the quaternion
+    The control law calculates the torque :math:`\\mathbf{L}` based on the quaternion
     error vector and the angular velocity error.
 
     Parameters
     ----------
     p : float, optional
-        Proportional gain $P$. Defaults to 0.1.
+        Proportional gain :math:`P`. Defaults to 0.1.
     d : :class:`numpy.ndarray`, optional
-        Derivative gain vector $D$, shape (3,). Defaults to $[1.0, 1.0, 1.0]$.
+        Derivative gain vector :math:`D`, shape (3,). Defaults to :math:`[1.0, 1.0, 1.0]`.
 
     Attributes
     ----------
     p : float
-        Proportional gain $P$.
+        Proportional gain :math:`P`.
     d : :class:`numpy.ndarray`
-        Derivative gain vector $D$.
+        Derivative gain vector :math:`D`.
     """
     _params = ['p', 'd']
 
@@ -131,12 +131,12 @@ class PDController(Controller):
                ref: PhysicalState,
                **kwargs) -> np.ndarray:
         """
-        Calculates the output torque vector $\mathbf{L}$ using the PD control law.
+        Calculates the output torque vector :math:`\\mathbf{L}` using the PD control law.
 
         The control law is approximately:
-        $\mathbf{L} = \mathrm{sgn}(q_4) P \mathbf{q}_{vec,e} - D \mathbf{\omega}_e$
-        where $\mathbf{q}_{vec,e}$ is the error quaternion vector, $q_4$ is the
-        error quaternion scalar, and $\mathbf{\omega}_e$ is the angular velocity error.
+        :math:`\\mathbf{L} = \\mathrm{sgn}(q_4) P \\mathbf{q}_{vec,e} - D \\mathbf{\\omega}_e`
+        where :math:`\\mathbf{q}_{vec,e}` is the error quaternion vector, :math:`q_4` is the
+        error quaternion scalar, and :math:`\\mathbf{\\omega}_e` is the angular velocity error.
 
         Parameters
         ----------
@@ -150,7 +150,7 @@ class PDController(Controller):
         Returns
         -------
         :class:`numpy.ndarray`
-            The calculated output torque vector $\mathbf{L}$, shape (3,).
+            The calculated output torque vector :math:`\\mathbf{L}`, shape (3,).
         """
 
         qc = ref.rot.as_quat()
@@ -173,27 +173,27 @@ class SMCController(Controller):
     """
     Implements a Sliding Mode Controller (SMC) for attitude control.
 
-    This controller is based on a sliding surface $\mathbf{s} = \mathbf{\omega}_e + k \mathbf{q}_{vec,e}$
+    This controller is based on a sliding surface :math:`\\mathbf{s} = \\mathbf{\\omega}_e + k \\mathbf{q}_{vec,e}`
     and uses a saturation function to approximate the sign function.
 
     Parameters
     ----------
     e : float, optional
-        The boundary layer thickness $\epsilon$. Defaults to 0.01.
+        The boundary layer thickness :math:`\\epsilon`. Defaults to 0.01.
     k : float, optional
-        The positive gain $k$ used in the sliding surface definition. Defaults to 0.015.
+        The positive gain :math:`k` used in the sliding surface definition. Defaults to 0.015.
     G : :class:`numpy.ndarray`, optional
-        The diagonal gain matrix $\mathbf{G}$, shape (3, 3). Defaults to a diagonal
+        The diagonal gain matrix :math:`\\mathbf{G}`, shape (3, 3). Defaults to a diagonal
         matrix with 0.15 on the main diagonal.
 
     Attributes
     ----------
     e : float
-        The boundary layer thickness $\epsilon$.
+        The boundary layer thickness :math:`\\epsilon`.
     k : float
-        The positive gain $k$ for the sliding surface.
+        The positive gain :math:`k` for the sliding surface.
     G : :class:`numpy.ndarray`
-        The diagonal gain matrix $\mathbf{G}$.
+        The diagonal gain matrix :math:`\\mathbf{G}`.
     """
     _params = ['e', 'k', 'G']
     def __init__(self) -> None:
@@ -216,21 +216,21 @@ class SMCController(Controller):
         may or may not hold.
 
         The function returns:
-        1, if $s_i > \epsilon$
-        $s_i / \epsilon$, if $|s_i| \le \epsilon$
-        -1, if $s_i < -\epsilon$
+        :math:`1`, if :math:`s_i > \\epsilon`
+        :math:`s_i / \\epsilon`, if :math:`|s_i| \\le \\epsilon`
+        :math:`-1`, if :math:`s_i < -\\epsilon`
 
         Parameters
         ----------
         manifold : :class:`numpy.ndarray`
-            The sliding surface vector $\mathbf{s}$, shape (N,).
+            The sliding surface vector :math:`\\mathbf{s}`, shape (N,).
         epsilon : float
-            The boundary layer thickness $\epsilon$.
+            The boundary layer thickness :math:`\\epsilon`.
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The saturated vector $\mathbf{s}$, shape (N,).
+            The saturated vector :math:`\\mathbf{s}`, shape (N,).
         """
         s = manifold
 
@@ -249,7 +249,7 @@ class SMCController(Controller):
                ref: PhysicalState,
                **kwargs) -> np.ndarray:
         """
-        Calculates the output torque vector $\mathbf{L}$ using the Sliding Mode Control law.
+        Calculates the output torque vector :math:`\\mathbf{L}` using the Sliding Mode Control law.
 
         The control torque is calculated based on the SMC equation that includes the
         inertia matrix, desired acceleration, error terms, and the saturation
@@ -262,17 +262,17 @@ class SMCController(Controller):
         ref : :class:`simulation.PhysicalState`
             The reference physical state.
         **kwargs : dict
-            Must contain the inertia matrix $\mathbf{J}$ under the key "J".
+            Must contain the inertia matrix :math:`\\mathbf{J}` under the key "J".
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The calculated output torque vector $\mathbf{L}$, shape (3,).
+            The calculated output torque vector :math:`\\mathbf{L}`, shape (3,).
 
         Raises
         ------
         KeyError
-            If the inertia matrix $\mathbf{J}$ is not provided in `kwargs`.
+            If the inertia matrix :math:`\\mathbf{J}` is not provided in `kwargs`.
         """
 
         J: np.ndarray = kwargs["J"]
@@ -293,7 +293,7 @@ class SMCController(Controller):
         # Moment generated from sliding mode controller (based on equation 7.23b)
         # NOTE: The original code uses .T which might imply transpose but is often redundant for 1D numpy arrays.
         L = J @ (k / 2 * (abs(q4) * (ref.w - state.w) - \
-                         misc.skew(q_vec) @ (ref.w - state.w).T) \
-                         + ref.w_dot - G @ s_bar.T) \
-                         + misc.skew(state.w) @ J @ state.w.T
+                          misc.skew(q_vec) @ (ref.w - state.w).T) \
+                          + ref.w_dot - G @ s_bar.T) \
+                          + misc.skew(state.w) @ J @ state.w.T
         return L.ravel()

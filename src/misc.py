@@ -5,20 +5,20 @@ import matplotlib.pyplot as plt
 
 def skew(v: np.ndarray) -> np.ndarray:
     """
-    Returns the skew-symmetric matrix $\mathbf{S}$ of a 3-element vector $\mathbf{v}$.
+    Returns the skew-symmetric matrix :math:`\\mathbf{S}` of a 3-element vector :math:`\\mathbf{v}`.
 
-    The skew-symmetric matrix $\mathbf{S}$ allows the cross product to be
-    represented as a matrix multiplication: $\mathbf{v} \times \mathbf{u} = \mathbf{S}\mathbf{u}$.
+    The skew-symmetric matrix :math:`\\mathbf{S}` allows the cross product to be
+    represented as a matrix multiplication: :math:`\\mathbf{v} \\times \\mathbf{u} = \\mathbf{S}\\mathbf{u}`.
 
     Parameters
     ----------
     v : :class:`numpy.ndarray`
-        A 3-element vector $\mathbf{v}$, shape (3,).
+        A 3-element vector :math:`\\mathbf{v}`, shape (3,).
 
     Returns
     -------
     :class:`numpy.ndarray`
-        The $3 \times 3$ skew-symmetric matrix $\mathbf{S}$.
+        The :math:`3 \\times 3` skew-symmetric matrix :math:`\\mathbf{S}`.
     """
     return np.array([[0, -v[2], v[1]],
                      [v[2], 0, -v[0]],
@@ -27,43 +27,43 @@ def skew(v: np.ndarray) -> np.ndarray:
 
 def quat_conjugate(q: np.ndarray) -> np.ndarray:
     """
-    Computes the quaternion conjugate $\mathbf{q}^*$.
+    Computes the quaternion conjugate :math:`\\mathbf{q}^*`.
 
-    It negates the vector part ($\mathbf{i}$, $\mathbf{j}$, $\mathbf{k}$)
-    while keeping the scalar part ($\mathbf{w}$) the same.
-    The input and output format is assumed to be $[x, y, z, w]$.
+    It negates the vector part (:math:`\\mathbf{i}`, :math:`\\mathbf{j}`, :math:`\\mathbf{k}`)
+    while keeping the scalar part (:math:`\\mathbf{w}`) the same.
+    The input and output format is assumed to be :math:`[x, y, z, w]`.
 
     Parameters
     ----------
     q : :class:`numpy.ndarray`
-        The quaternion $\mathbf{q}$ in $[x, y, z, w]$ format, shape (4,).
+        The quaternion :math:`\\mathbf{q}` in :math:`[x, y, z, w]` format, shape (4,).
 
     Returns
     -------
     :class:`numpy.ndarray`
-        The conjugate quaternion $\mathbf{q}^*$ in $[x, y, z, w]$ format, shape (4,).
+        The conjugate quaternion :math:`\\mathbf{q}^*` in :math:`[x, y, z, w]` format, shape (4,).
     """
     return np.array([-q[0], -q[1], -q[2], q[3]])
 
 
 def quat_multiply(q1: np.ndarray, q2: np.ndarray) -> np.ndarray:
     """
-    Performs the Hamilton product (multiplication) of two quaternions, $\mathbf{q}_1 \otimes \mathbf{q}_2$.
+    Performs the Hamilton product (multiplication) of two quaternions, :math:`\\mathbf{q}_1 \\otimes \\mathbf{q}_2`.
 
-    Both input quaternions are assumed to be in the $[x, y, z, w]$ format.
+    Both input quaternions are assumed to be in the :math:`[x, y, z, w]` format.
 
     Parameters
     ----------
     q1 : :class:`numpy.ndarray`
-        The first quaternion $\mathbf{q}_1$ in $[x, y, z, w]$ format, shape (4,).
+        The first quaternion :math:`\\mathbf{q}_1` in :math:`[x, y, z, w]` format, shape (4,).
     q2 : :class:`numpy.ndarray`
-        The second quaternion $\mathbf{q}_2$ in $[x, y, z, w]$ format, shape (4,).
+        The second quaternion :math:`\\mathbf{q}_2` in :math:`[x, y, z, w]` format, shape (4,).
 
     Returns
     -------
     :class:`numpy.ndarray`
-        The resulting quaternion product $\mathbf{q}_1 \otimes \mathbf{q}_2$
-        in $[x, y, z, w]$ format, shape (4,).
+        The resulting quaternion product :math:`\\mathbf{q}_1 \\otimes \\mathbf{q}_2`
+        in :math:`[x, y, z, w]` format, shape (4,).
     """
     x1, y1, z1, w1 = q1
     x2, y2, z2, w2 = q2

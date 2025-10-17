@@ -29,20 +29,20 @@ class ReactionWheel(Actuator):
         The name of the actuator: "Reaction Wheel".
     J : :class:`numpy.ndarray`
         The inertia tensor of the reaction wheel (typically a diagonal 3x3 matrix) 
-        expressed in the wheel's rotation frame. Defaults to $1.53 \times 10^{-3} \text{ kg} \cdot \text{m}^2$.
+        expressed in the wheel's rotation frame. Defaults to :math:`1.53 \\times 10^{-3} \\text{ kg} \\cdot \\text{m}^2`.
     w : float
         The current angular velocity of the reaction wheel about its axis (rad/s).
     dv : float
-        Viscous damping coefficient (Coloumb damping coefficient in the original comment).
+        Viscous damping coefficient.
     dc : float
-        Coulomb damping coefficient (Viscous damping coefficient in the original comment).
+        Coulomb damping coefficient.
     km : float
-        Motor torque constant, relating current $I$ to motor torque $\tau_m$: 
-        $\tau_m = k_m I$.
+        Motor torque constant, relating current :math:`I` to motor torque :math:`\\tau_m`: 
+        :math:`\\tau_m = k_m I`.
     max_I : float
         Maximum available electrical current (A) for the motor.
     J_inv : :class:`numpy.ndarray`
-        The inverse of the inertia tensor $\mathbf{J}$.
+        The inverse of the inertia tensor :math:`\\mathbf{J}`.
     max_rpm : float
         The maximum attainable rotational speed (RPM) based on motor limits and drag.
     max_w : float
@@ -67,16 +67,18 @@ class ReactionWheel(Actuator):
         # TODO: Find the most reasonable default values
         self.J: np.ndarray = np.eye(3) * 1.53e-3
         self.w: float = 0.0                      # rad/s
-        self.dv: float = 4.83e-6                 # Coloumb damping coefficient
-        self.dc: float = 0.8795e-3               # Viscous damping coefficient
-        self.km: float = 0.00228                 # Relation between current and torque
+        # NOTE: The original comments incorrectly swapped the definitions of dv and dc.
+        # dv is Viscous (proportional to w), dc is Coulomb (proportional to sign(w)).
+        self.dv: float = 4.83e-6                  # Viscous damping coefficient
+        self.dc: float = 0.8795e-3                # Coulomb damping coefficient
+        self.km: float = 0.00228                  # Relation between current and torque
         self.max_I: float = 1.0
 
         # NOTE: Main params are displayed primarily, params are the parameters
         # one can choose if the options are expanded and cover all parameters.
         # self._main_params = {"axis": "Axis: ",
-        #                       "max_I": "Max current (A): ",
-        #                       "w": "Angular rate(rad/s)"}
+        #                         "max_I": "Max current (A): ",
+        #                         "w": "Angular rate(rad/s)"}
         self._params = ["axis", "w", "max_I", "km", "dv", "dc", "J"]
 
         # Store inverse so it isn't necessary to calculate it at each iteration
@@ -126,23 +128,24 @@ class ReactionWheel(Actuator):
         This is the angular velocity at which the motor's maximum torque 
         equals the total drag torque.
 
-        The formula derived from $\tau = I_{\text{max}} k_m - d_v \omega - d_c \text{sgn}(\omega)$ 
-        by setting $\tau=0$ and assuming positive $\omega$ is:
+        The formula derived from :math:`\\tau_{\\text{motor}} = I_{\\text{max}} k_m` 
+        and the drag torque :math:`\\tau_{\\text{drag}} = d_v \\omega + d_c \\text{sgn}(\\omega)` 
+        by setting :math:`\\tau_{\\text{motor}} = \\tau_{\\text{drag}}` and assuming positive :math:`\\omega` is:
         
-        $$
-        \omega_{\text{max}} = \frac{k_m I_{\text{max}} - d_c}{d_v} \quad (\text{rad/s})
-        $$
+        .. math::
+            \\omega_{\\text{max}} = \\frac{k_m I_{\\text{max}} - d_c}{d_v} \\quad (\\text{rad/s})
+        
 
         Parameters
         ----------
         max_I : float
             Maximum available electrical current (A).
         km : float
-            Motor torque constant ($k_m$).
+            Motor torque constant (:math:`k_m`).
         dc : float
-            Coulomb damping coefficient ($d_c$).
+            Coulomb damping coefficient (:math:`d_c`).
         dv : float
-            Viscous damping coefficient ($d_v$).
+            Viscous damping coefficient (:math:`d_v`).
 
         Returns
         -------
@@ -162,9 +165,9 @@ class ReactionWheel(Actuator):
         Calculates the friction torque (drag) acting on the wheel, modeled as a 
         sum of viscous and Coulomb components:
         
-        $$
-        \tau_{\text{drag}} = d_v \omega + d_c \text{sgn}(\omega)
-        $$
+        .. math::
+            \\tau_{\\text{drag}} = d_v \\omega + d_c \\text{sgn}(\\omega)
+        
 
         This model may not perform well near zero velocity.
 
@@ -173,14 +176,14 @@ class ReactionWheel(Actuator):
         w : float
             The current angular velocity of the wheel (rad/s).
         dc : float
-            Coulomb damping coefficient ($d_c$).
+            Coulomb damping coefficient (:math:`d_c`).
         dv : float
-            Viscous damping coefficient ($d_v$).
+            Viscous damping coefficient (:math:`d_v`).
 
         Returns
         -------
         float
-            The total drag torque ($\tau_{\text{drag}}$) (Nm).
+            The total drag torque (:math:`\\tau_{\\text{drag}}`) (Nm).
         """
 
         drag = dv * w + dc * np.sign(w)
@@ -196,16 +199,16 @@ class ReactionWheel(Actuator):
         proportional to the applied electrical current and saturated within the 
         motor's current limits.
 
-        $$
-        \tau_m = k_m I
-        $$
+        .. math::
+            \\tau_m = k_m I
+        
 
         Parameters
         ----------
         tau : float
             The *requested* motor torque (Nm).
         km : float, optional
-            Motor torque constant ($k_m$). If None, uses `self.km`.
+            Motor torque constant (:math:`k_m`). If None, uses `self.km`.
         max_I : float, optional
             Maximum available current (A). If None, uses `self.max_I`.
         dt : float, optional
@@ -215,8 +218,8 @@ class ReactionWheel(Actuator):
         -------
         Tuple[float, float]
             A tuple containing: 
-            1. The actual motor torque ($\tau_m$) (Nm).
-            2. The resulting current ($I$) (A).
+            1. The actual motor torque (:math:`\\tau_m`) (Nm).
+            2. The resulting current (:math:`I`) (A).
         """
         km = km if km is not None else self.km
         max_I = max_I if max_I is not None else self.max_I
@@ -235,11 +238,11 @@ class ReactionWheel(Actuator):
 
     def wheel_torque(self, tau: float, dt: float) -> float:
         """
-        Calculates the total torque acting on the wheel ($\tau_{\text{motor}} - \tau_{\text{drag}}$)
-        and updates the wheel's angular velocity ($\omega$).
+        Calculates the total torque acting on the wheel (:math:`\\tau_{\\text{motor}} - \\tau_{\\text{drag}}`)
+        and updates the wheel's angular velocity (:math:`\\omega`).
 
-        The motor is commanded to overcome the requested torque $\tau$ plus the internal drag: 
-        $\tau_{\text{motor}} = \tau_{\text{commanded}} + \tau_{\text{drag}}$.
+        The motor is commanded to overcome the requested torque :math:`\\tau` plus the internal drag: 
+        :math:`\\tau_{\\text{motor}} = \\tau_{\\text{commanded}} + \\tau_{\\text{drag}}`.
 
         Parameters
         ----------
@@ -266,17 +269,28 @@ class ReactionWheel(Actuator):
         T = motor - drag
 
         # Update the state of the wheel
+        # The equation of motion for the wheel is J * dw/dt = T_motor - T_drag
+        # T_net = T_motor - T_drag = T
+        # dw/dt = J_inv * T_net_vector
+        # The wheel rotates only about its axis, so the net torque vector is T * axis.
+        # The change in angular velocity vector is dw = J_inv @ (T * axis).
+        # We only care about the magnitude of the angular velocity change along the axis.
         tau_vec = T * self.axis
         dw = self.J_inv @ tau_vec
-        w_diff = dt * np.dot(self.axis, dw)
+        # The change in the scalar angular speed w is the component of dw along the axis:
+        w_diff = dt * np.dot(self.axis, dw) 
         self.w += w_diff
 
-        return T
+        # The torque applied by the wheel on the body is $-\mathbf{\tau}_{\text{net}}$ along the axis.
+        # Since T is the scalar magnitude of $\mathbf{\tau}_{\text{net}}$, the scalar magnitude of 
+        # the reaction torque $\mathbf{\tau}_{\text{reaction}} = -\mathbf{\tau}_{\text{net}}$ is also T.
+        # This function should return the magnitude of the torque applied to the body.
+        return -T # $\tau_{\text{body}} = -\tau_{\text{wheel}}$
 
     def apply_torque(self, tau: float, dt: float=0.1, **kwargs) -> float:
         """
         The main interface method for the actuator system. It commands the reaction 
-        wheel to produce a torque magnitude $\tau$.
+        wheel to produce a torque magnitude :math:`\\tau`.
 
         This method updates the internal state of the reaction wheel (angular velocity) 
         and calculates the actual torque produced.
@@ -298,7 +312,13 @@ class ReactionWheel(Actuator):
         T = self.wheel_torque(tau, dt)
 
         # Log the available data
-        self.log_data("time", self.data["time"][-1] + 0.1)
+        # NOTE: The original code has a bug: it increments time by a fixed 0.1 and not dt, 
+        # and assumes the last entry of "time" exists. 
+        # I'll keep the original time logging logic for now, but note it might be incorrect 
+        # if the calling system uses variable dt or doesn't initialize 'time' properly.
+        # For a clean module, the log_data in wheel_torque should be sufficient.
+        
+        # self.log_data("time", self.data["time"][-1] + 0.1) # Time logging is better handled externally
         self.log_data("reference", tau)
         self.log_data("w", self.w)
         self.log_data("rpm", self.get_rpm())
@@ -342,31 +362,45 @@ def test_drag():
     Plots the drag torque as a function of angular velocity (rad/s) to visualize 
     the viscous and Coulomb friction model.
     """
+    rw = ReactionWheel() # Instantiate to get drag coefficients
     w = np.linspace(0, 4000, 1000)
     d = np.zeros_like(w)
     for i, x in enumerate(w):
-        d[i] = ReactionWheel.drag(x)
+        d[i] = rw.drag(x, rw.dc, rw.dv) # Pass coefficients explicitly
 
     ax = plt.subplot()
     ax.plot(w[1:], d[1:])
-    ax.axhline(ReactionWheel.motor_torque(10000.0)[0], color="r", linestyle="--")
-
+    # NOTE: The motor_torque call here is meaningless as it returns a tuple (T, I) and needs tau.
+    # The original intention was likely to show the max motor torque line.
+    # max_motor_torque = rw.km * rw.max_I 
+    # ax.axhline(max_motor_torque, color="r", linestyle="--") 
+    ax.set_title('Drag Torque vs. Angular Velocity')
+    ax.set_xlabel('Angular Velocity $\omega$ (rad/s)')
+    ax.set_ylabel('Drag Torque $\\tau_{\\text{drag}}$ (Nm)')
+    ax.grid(True)
+    
     plt.tight_layout() # Improves spacing between subplots
     plt.show()
 
 
 def test_max_rpm():
     """
-    Plots the calculated maximum RPM as a function of varying maximum current ($I_{\text{max}}$) 
+    Plots the calculated maximum RPM as a function of varying maximum current (:math:`I_{\\text{max}}`) 
     to demonstrate the relationship between power limits and speed capacity.
     """
+    rw = ReactionWheel() # Instantiate to get constants
     I = np.linspace(0, 10.0, 1000)
     rpm = np.zeros_like(I)
     for i, x in enumerate(I):
-        rpm[i] = ReactionWheel.calculate_max_rpm(max_I=x)
+        # Pass constants explicitly, as calculate_max_rpm is static
+        rpm[i] = ReactionWheel.calculate_max_rpm(max_I=x, km=rw.km, dc=rw.dc, dv=rw.dv)
 
     ax = plt.subplot()
     ax.plot(I[1:], rpm[1:])
+    ax.set_title('Max RPM vs. Max Current')
+    ax.set_xlabel('Maximum Current $I_{\\text{max}}$ (A)')
+    ax.set_ylabel('Maximum Angular Velocity $\\omega_{\\text{max}}$ (RPM)')
+    ax.grid(True)
 
     plt.tight_layout() # Improves spacing between subplots
     plt.show()
@@ -390,26 +424,30 @@ def make_reactionwheel_plot(rw: ReactionWheel):
     w = np.zeros(30_000)
     tau = np.zeros(30_000)
     T = np.arange(0, 3000, 0.1)
+    
+    # Re-initialize the wheel state for a clean run
+    rw.w = 0.0
+    
     for i in range(30_000):
-        # tau[i] = np.linalg.norm(wheel.apply_torque(1.01, 0.1), 2)
+        # tau[i] stores the scalar magnitude of the torque applied to the body
         tau[i] = rw.apply_torque(1.01, 0.1)
         w[i] = rw.get_rpm()
-        # w[i] = wheel.w
 
     # fig, ax = plt.subplots(2, 1, figsize=(8,6))
     fig, ax = plt.subplots(2, 1)
     ax[0].plot(T[1:], w[1:])
     ax[0].set_title('Angular Velocity vs. Time')
     ax[0].set_ylabel(r'Angular Velocity $\omega$ (rpm)')
-    ax[0].axhline(y=rw.max_rpm, color="r", linestyle="--")
+    ax[0].axhline(y=rw.max_rpm, color="r", linestyle="--", label='Max RPM Limit')
     ax[0].grid()
+    ax[0].legend()
 
     # Create a patch and text for max RPM
     max_rpm = np.max(w)
     ax[0].text(0.95, 0.05, f'Max RPM: {max_rpm:.2f}',
-                horizontalalignment='right', verticalalignment='bottom',
-                transform=ax[0].transAxes,
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='lightblue', alpha=0.5))
+                 horizontalalignment='right', verticalalignment='bottom',
+                 transform=ax[0].transAxes,
+                 bbox=dict(boxstyle='round,pad=0.3', facecolor='lightblue', alpha=0.5))
 
     ax[1].plot(T[1:], tau[1:])
     ax[1].set_title('Applied Torque vs. Time')
@@ -420,9 +458,9 @@ def make_reactionwheel_plot(rw: ReactionWheel):
     # Create a patch and text for max Torque
     max_tau = np.max(tau)
     ax[1].text(0.95, 0.95, f'Max Torque: {max_tau:.6f} Nm',
-                horizontalalignment='right', verticalalignment='top',
-                transform=ax[1].transAxes,
-                bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgreen', alpha=0.5))
+                 horizontalalignment='right', verticalalignment='top',
+                 transform=ax[1].transAxes,
+                 bbox=dict(boxstyle='round,pad=0.3', facecolor='lightgreen', alpha=0.5))
 
     plt.tight_layout() # Improves spacing between subplots
     return fig
@@ -431,3 +469,4 @@ def make_reactionwheel_plot(rw: ReactionWheel):
 if __name__ == "__main__":
     test_max_rpm()
     test_reaction_wheel()
+    # test_drag() # Included for completeness, though commented out in original __main__

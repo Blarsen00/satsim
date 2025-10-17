@@ -13,19 +13,19 @@ from sgp4.api import accelerated, Satrec, WGS72
 # Currently set to values of the international space station as dummy values
 BIOSAT = Satrec()
 BIOSAT.sgp4init(
-    WGS72,                       # gravity model
-    'i',                         # 'a' = old AFSPC mode, 'i' = improved mode
-    25544,                       # satnum: Satellite number
-    25545.69339541,              # epoch: days since 1949 December 31 00:00 UT
-    3.8792e-05,                  # bstar: drag coefficient (1/earth radii)
-    0.0,                         # ndot: ballistic coefficient (radians/minute^2)
-    0.0,                         # nddot: mean motion 2nd derivative (radians/minute^3)
-    0.0007417,                   # ecco: eccentricity
-    0.3083420829620822,          # argpo: argument of perigee (radians 0..2pi)
-    0.9013560935706996,          # inclo: inclination (radians 0..pi)
-    1.4946964807494398,          # mo: mean anomaly (radians 0..2pi)
-    0.06763602333248933,         # no_kozai: mean motion (radians/minute)
-    3.686137125541276,           # nodeo: R.A. of ascending node (radians 0..2pi)
+    WGS72,                         # gravity model
+    'i',                           # 'a' = old AFSPC mode, 'i' = improved mode
+    25544,                         # satnum: Satellite number
+    25545.69339541,                # epoch: days since 1949 December 31 00:00 UT
+    3.8792e-05,                    # bstar: drag coefficient (1/earth radii)
+    0.0,                           # ndot: ballistic coefficient (radians/minute^2)
+    0.0,                           # nddot: mean motion 2nd derivative (radians/minute^3)
+    0.0007417,                     # ecco: eccentricity
+    0.3083420829620822,            # argpo: argument of perigee (radians 0..2pi)
+    0.9013560935706996,            # inclo: inclination (radians 0..pi)
+    1.4946964807494398,            # mo: mean anomaly (radians 0..2pi)
+    0.06763602333248933,           # no_kozai: mean motion (radians/minute)
+    3.686137125541276,             # nodeo: R.A. of ascending node (radians 0..2pi)
 )
 
 
@@ -42,15 +42,15 @@ class Satellite:
     initial_state : :class:`simulation.PhysicalState`
         The state of the satellite when the simulation was started or last reset.
     J : :class:`numpy.ndarray`
-        The inertia matrix $\mathbf{J}$ of the satellite, shape (3, 3).
-        Defaults to $0.1 \times \mathbf{I}$.
+        The inertia matrix :math:`\\mathbf{J}` of the satellite, shape (3, 3).
+        Defaults to :math:`0.1 \\times \\mathbf{I}`.
     H : :class:`numpy.ndarray`
-        The total angular momentum vector $\mathbf{H}$ (though initialized as a matrix,
+        The total angular momentum vector :math:`\\mathbf{H}` (though initialized as a matrix,
         it's typically a vector in physics context).
-        Defaults to a $3 \times 3$ zero array.
+        Defaults to a :math:`3 \\times 3` zero array.
     b0 : :class:`numpy.ndarray`
-        The magnetic field vector $\mathbf{B}_0$ in the **inertial frame**, used
-        for simple magnetic torque calculations. Defaults to $[0, 0, 1] \times 65\mu\text{T}$.
+        The magnetic field vector :math:`\\mathbf{B}_0` in the **inertial frame**, used
+        for simple magnetic torque calculations. Defaults to :math:`[0, 0, 1] \\times 65\\mu\\text{T}`.
     satrec : :class:`sgp4.api.Satrec`
         The SGP4 satellite record object, used for orbit propagation.
         Defaults to the global ``BIOSAT`` record.
@@ -60,7 +60,7 @@ class Satellite:
         A placeholder for satellite energy or power consumption status. Defaults to 100.
     """
     state: PhysicalState = PhysicalState()
-    J: np.ndarray = np.identity(3) * 0.1         # Inertia matrix
+    J: np.ndarray = np.identity(3) * 0.1          # Inertia matrix
     H: np.ndarray = np.zeros((3, 3))             # Angular momentum
 
     # Magnetic vector in inertial frame
@@ -127,12 +127,12 @@ class Satellite:
         # to use the position of the satellite to get the magnetic field
         # vector. See https://pypi.org/project/pygeomag/
         """
-        Returns the magnetic field vector $\mathbf{B}$ in the **body frame**.
+        Returns the magnetic field vector :math:`\\mathbf{B}` in the **body frame**.
 
         This implementation uses a simple model where the magnetic field
-        vector $\mathbf{B}_{inertial}$ is constant in the inertial frame.
+        vector :math:`\\mathbf{B}_{inertial}` is constant in the inertial frame.
         The body-frame vector is calculated via rotation:
-        $\mathbf{B}_{body} = \mathbf{R} \mathbf{B}_{inertial}$
+        :math:`\\mathbf{B}_{body} = \\mathbf{R} \\mathbf{B}_{inertial}`
 
         Parameters
         ----------
@@ -143,7 +143,7 @@ class Satellite:
         Returns
         -------
         :class:`numpy.ndarray`
-            The magnetic field vector $\mathbf{B}$ in the body frame, shape (3,).
+            The magnetic field vector :math:`\\mathbf{B}` in the body frame, shape (3,).
         """
         # NOTE: Magnetic field vector in some inertial frame. Will not change its direction or
         # magnitude. The magnitude of Earth's magnetic field at its surface ranges from 25 to 65 μT

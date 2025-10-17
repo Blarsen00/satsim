@@ -16,11 +16,11 @@ class PhysicalState:
     rot : :class:`scipy.spatial.transform.Rotation`
         The current rotation (attitude) of the body. Default is identity rotation.
     w : :class:`numpy.ndarray`
-        The angular velocity vector $\mathbf{w}$ in rad/s, shape (3,).
-        Default is $\mathbf{0}$.
+        The angular velocity vector :math: `\mathbf{\omega}` in rad/s, shape (3,).
+        Default is :math: `\mathbf{0}`.
     w_dot : :class:`numpy.ndarray`
-        The angular acceleration vector $\mathbf{\dot{w}}$ in rad/s^2, shape (3,).
-        Default is $\mathbf{0}$.
+        The angular acceleration vector :math: `\mathbf{\dot{\omega}}` in rad/s^2, shape (3,).
+        Default is :math: `\mathbf{0}`.
     """
     rot: Rotation = field(default_factory=lambda: Rotation.from_matrix(np.identity(3)))
     w: np.ndarray = field(default_factory=lambda: np.zeros(3))
@@ -34,14 +34,14 @@ class PhysicalState:
 
 def randomize_angular_velocity(self, w: float = 1.0):
         """
-        Randomizes the angular velocity vector $\mathbf{w}$ with uniform
-        distribution between :math:`-w` and :math:`w` rad/s for each component.
+        Randomizes the angular velocity vector :math: `\mathbf{\omega}` with uniform
+        distribution between :math:`-\omega` and :math:`\omega` rad/s for each component.
 
         Parameters
         ----------
         w : float, optional
             The maximum absolute value for the angular velocity components
-            in rad/s. The range will be :math:`[-w, w]`.
+            in rad/s. The range will be :math:`[-\omega, \omega]`.
             Defaults to 1.0.
         """
         self.w = np.random.uniform(-w, w, 3)
@@ -100,19 +100,19 @@ class Simulate:
     def angular_momentum(J: np.ndarray, w: np.ndarray):
         """
         Calculates the angular momentum $\mathbf{H}$ using the inertia tensor $\mathbf{J}$
-        and angular velocity $\mathbf{w}$: $\mathbf{H} = \mathbf{J}\mathbf{w}$.
+        and angular velocity :math: `\mathbf{\omega}: $\mathbf{H} = \mathbf{J}\mathbf{w}`.
 
         Parameters
         ----------
         J : :class:`numpy.ndarray`
             The inertia tensor, shape (3, 3).
         w : :class:`numpy.ndarray`
-            The angular velocity vector $\mathbf{w}$, shape (3,).
+            The angular velocity vector :math: `\mathbf{\omega}`, shape (3,).
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The angular momentum vector $\mathbf{H}$, shape (3,).
+            The angular momentum vector :math: `\mathbf{H}`, shape (3,).
         """
         assert type(J) is np.ndarray and J.shape == (3, 3)
         assert type(w) is np.ndarray and w.shape == (3,)
@@ -123,23 +123,23 @@ class Simulate:
                                    H: np.ndarray, dt: float):
         """
         Performs a step-wise update of the angular momentum vector $\mathbf{H}$
-        using the relationship $\mathbf{\dot{H}} = \mathbf{L} - \mathbf{\omega} \times \mathbf{H}$.
+        using the relationship :math: `\mathbf{\dot{H}} = \mathbf{L} - \mathbf{\omega} \times \mathbf{H}`.
 
         Parameters
         ----------
         L : :class:`numpy.ndarray`
-            The external torque vector $\mathbf{L}$, shape (3,).
+            The external torque vector :math: `\mathbf{L}`, shape (3,).
         w : :class:`numpy.ndarray`
-            The angular velocity vector $\mathbf{w}$, shape (3,).
+            The angular velocity vector :math: `\mathbf{\omega}`, shape (3,).
         H : :class:`numpy.ndarray`
-            The current angular momentum vector $\mathbf{H}$, shape (3,).
+            The current angular momentum vector :math: `\mathbf{H}`, shape (3,).
         dt : float
             The time step for integration. Must be positive.
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The updated angular momentum vector $\mathbf{H}$ after time $dt$.
+            The updated angular momentum vector :math: `\mathbf{H}` after time $dt$.
         """
         assert type(L) is np.ndarray and L.shape == (3,)
         assert type(w) is np.ndarray and w.shape == (3,)
@@ -153,21 +153,21 @@ class Simulate:
     def direct_euler(x: np.ndarray, x_dot: np.ndarray, dt: float):
         """
         Performs a direct Euler integration step for a state vector,
-        typically used for angular velocity in this context: $\mathbf{x}_{k+1} = \mathbf{x}_k + \mathbf{\dot{x}}_k dt$.
+        typically used for angular velocity in this context: :math: `\mathbf{x}_{k+1} = \mathbf{x}_k + \mathbf{\dot{x}}_k dt`.
 
         Parameters
         ----------
         x : :class:`numpy.ndarray`
-            The current state vector (e.g., angular velocity $\mathbf{w}$).
+            The current state vector (e.g., angular velocity :math: `\mathbf{\omega}`
         x_dot : :class:`numpy.ndarray`
-            The current derivative vector (e.g., angular acceleration $\mathbf{\dot{w}}$).
+            The current derivative vector (e.g., angular acceleration :math: `\mathbf{\dot{\omega}}`).
         dt : float
             The time step for integration. Must be positive.
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The updated state vector (e.g., angular velocity $\mathbf{w}$) after time $dt$.
+            The updated state vector (e.g., angular velocity :math: `\mathbf{\omega}`) after time :math: `dt`.
         """
         assert len(x) == len(x_dot)
         assert dt > 0.0
@@ -178,7 +178,7 @@ class Simulate:
     @staticmethod
     def quaternion_derivate(q: np.ndarray, w: np.ndarray):
         """
-        Calculation of the time derivative of a quaternion $\mathbf{\dot{q}}$
+        Calculation of the time derivative of a quaternion :math: `\mathbf{\dot{q}}`
         based on the rotation and angular velocity.
 
         Parameters
@@ -186,7 +186,7 @@ class Simulate:
         q : :class:`numpy.ndarray`
             The current attitude as a quaternion.
         w : :class:`numpy.ndarray`
-            The angular velocity vector $\mathbf{w}$, shape (3,).
+            The angular velocity vector :math: `\mathbf{\omega}`, shape (3,).
         """
         qw = np.array([*w, 0])
         q_dot = 1/2 * misc.quat_multiply(q, qw)
@@ -196,21 +196,21 @@ class Simulate:
     def calculate_attitude(rot: Rotation, w: np.ndarray, dt: float):
         """
         Calculates the updated attitude (rotation) using a simple Euler
-        integration of the quaternion derivative $\mathbf{\dot{q}} = \frac{1}{2} \mathbf{q} \otimes [0, \mathbf{w}]^T$.
+        integration of the quaternion derivative :math: `\mathbf{\dot{q}} = \frac{1}{2} \mathbf{q} \otimes [0, \mathbf{\omega}]^T`.
 
         Parameters
         ----------
         rot : :class:`scipy.spatial.transform.Rotation`
             The current rotation object.
         w : :class:`numpy.ndarray`
-            The angular velocity vector $\mathbf{w}$, shape (3,).
+            The angular velocity vector :math: `\mathbf{\omega}`, shape (3,).
         dt : float
             The time step for integration. Must be positive.
 
         Returns
         -------
         :class:`scipy.spatial.transform.Rotation`
-            The updated rotation object after time $dt$.
+            The updated rotation object after time :math: `dt`.
         """
         assert type(rot) is Rotation
         assert type(w) is np.ndarray and w.shape == (3,)
@@ -236,9 +236,9 @@ class Simulate:
         Parameters
         ----------
         Q : :class:`numpy.ndarray`
-            The current quaternion $\mathbf{q}$ as a numpy array, shape (4,).
+            The current quaternion :math: `\mathbf{q}` as a numpy array, shape (4,).
         w : :class:`numpy.ndarray`
-            The angular velocity vector $\mathbf{w}$, shape (3,).
+            The angular velocity vector :math: `\mathbf{\omega}`, shape (3,).
         dt : float
             The time step for integration.
 
@@ -272,11 +272,11 @@ class Simulate:
         Parameters
         ----------
         L : :class:`numpy.ndarray`
-            The external torque vector $\mathbf{L}$, shape (3,).
+            The external torque vector :math: `\mathbf{L}`, shape (3,).
         state : :class:`PhysicalState`
             The current physical state of the body.
         J : :class:`numpy.ndarray`
-            The inertia tensor $\mathbf{J}$, shape (3, 3).
+            The inertia tensor :math: `\mathbf{J}`, shape (3, 3).
         dt : float
             The time step for integration.
 
@@ -295,22 +295,23 @@ class Simulate:
     @staticmethod
     def calculate_angular_accelleration(L: np.ndarray, w: np.ndarray, J: np.ndarray):
         """
-        Calculates the angular acceleration $\mathbf{\dot{w}}$ using Euler's rotational equation:
-        $\mathbf{\dot{w}} = \mathbf{J}^{-1} (\mathbf{L} - \mathbf{\omega} \times (\mathbf{J}\mathbf{\omega}))$.
+        Calculates the angular acceleration $\mathbf{\dot{\omega}}$ using Euler's rotational equation:
+        .. math::
+            \mathbf{\dot{\omega}} = \mathbf{J}^{-1} (\mathbf{L} - \mathbf{\omega} \times (\mathbf{J}\mathbf{\omega}))
 
         Parameters
         ----------
         L : :class:`numpy.ndarray`
-            The external torque vector $\mathbf{L}$, shape (3,).
+            The external torque vector :math: `\mathbf{L}`, shape (3,).
         w : :class:`numpy.ndarray`
-            The angular velocity vector $\mathbf{w}$, shape (3,).
+            The angular velocity vector :math: `\mathbf{\omega}`, shape (3,).
         J : :class:`numpy.ndarray`
-            The inertia tensor $\mathbf{J}$, shape (3, 3).
+            The inertia tensor :math: `\mathbf{J}`, shape (3, 3).
 
         Returns
         -------
         :class:`numpy.ndarray`
-            The angular acceleration vector $\mathbf{\dot{w}}$, shape (3,).
+            The angular acceleration vector :math: `\mathbf{\dot{\omega}}`, shape (3,).
         """
         J_inv = np.linalg.inv(J)
         w_dot = J_inv @ (L - misc.skew(w) @ J @ w)

@@ -25,8 +25,8 @@ class BaseReference:
     """
     Base class for reference state generation.
 
-    This class maintains and updates a reference state (attitude $\mathbf{R}$ and 
-    angular velocity $\mathbf{\omega}$) using simple forward integration.
+    This class maintains and updates a reference state (attitude :math:`\\mathbf{R}` and 
+    angular velocity :math:`\\mathbf{\\omega}`) using simple forward integration.
 
     Attributes
     ----------
@@ -50,7 +50,7 @@ class BaseReference:
         Updates the reference state for a single time step.
 
         The update uses simple forward Euler integration for angular velocity 
-        ($\mathbf{\omega}$) and updates the attitude ($\mathbf{R}$) based on the 
+        (:math:`\\mathbf{\\omega}`) and updates the attitude (:math:`\\mathbf{R}`) based on the 
         new angular velocity.
 
         Parameters
@@ -66,8 +66,8 @@ class BaseReference:
             The updated reference physical state.
         """
         self.state.w = Simulate.direct_euler(self.state.w, 
-                                               self.state.w_dot,
-                                               dt)
+                                             self.state.w_dot,
+                                             dt)
         self.state.rot = Simulate.calculate_attitude(self.state.rot,
                                                      self.state.w,
                                                      dt)
@@ -133,7 +133,7 @@ class EarthReference(BaseReference):
         Returns
         -------
         tuple of :class:`numpy.ndarray`
-            The orthonormalized vectors $(\mathbf{x}, \mathbf{y}, \mathbf{z})$.
+            The orthonormalized vectors :math:`(\\mathbf{x}, \\mathbf{y}, \\mathbf{z})`.
         """
         x /= np.linalg.norm(x, 2)
         y -= np.dot(y, x) * x  # Make y orthogonal to x
@@ -143,11 +143,11 @@ class EarthReference(BaseReference):
 
     def update(self, dt: float, **kwargs):
         """
-        Updates the reference attitude ($\mathbf{R}_{ref}$) for Earth-centric pointing.
+        Updates the reference attitude (:math:`\\mathbf{R}_{ref}`) for Earth-centric pointing.
 
-        The new reference attitude is calculated such that the body x-axis ($\mathbf{x}$) 
-        points from the satellite position ($\mathbf{p}_{sat}$) to the primary target 
-        position ($\mathbf{p}_{target}$), and the body y-axis ($\mathbf{y}$) aligns 
+        The new reference attitude is calculated such that the body x-axis (:math:`\\mathbf{x}`) 
+        points from the satellite position (:math:`\\mathbf{p}_{sat}`) to the primary target 
+        position (:math:`\\mathbf{p}_{target}`), and the body y-axis (:math:`\\mathbf{y}`) aligns 
         closest to the secondary target vector.
 
         Parameters
@@ -170,10 +170,10 @@ class EarthReference(BaseReference):
         Notes
         -----
         If the secondary target is nearly collinear with the primary target vector 
-        ($\mathbf{x}$), the norm of the projected vector $\mathbf{y}$ will be near zero 
-        ($< 0.1$). In this case, the current satellite attitude's y- and z-axes are 
-        projected onto the plane orthogonal to $\mathbf{x}$, and the one with the 
-        largest norm is used to define the new $\mathbf{y}$ axis to maintain a stable 
+        (:math:`\\mathbf{x}`), the norm of the projected vector :math:`\\mathbf{y}` will be near zero 
+        (:math:`< 0.1`). In this case, the current satellite attitude's y- and z-axes are 
+        projected onto the plane orthogonal to :math:`\\mathbf{x}`, and the one with the 
+        largest norm is used to define the new :math:`\\mathbf{y}` axis to maintain a stable 
         reference.
         """
         try:
@@ -210,8 +210,8 @@ class EarthReference(BaseReference):
         # NOTE: The norm of y can be viewed as a measure as to how successful one 
         # can be in the endevour of pointing the y-axis in the direction of the
         # secondary target. The norm of y can be 1 at most because x is normalized.
-        #       norm(y, 2) == 1 <=> y can perfectly point at secondary target.
-        #       norm(y, 2) == 0 <=> y points exactly perpendicular to 2. target.
+        #        norm(y, 2) == 1 <=> y can perfectly point at secondary target.
+        #        norm(y, 2) == 0 <=> y points exactly perpendicular to 2. target.
         if (np.linalg.norm(y,2) < 0.1):
             y_sat = R[:, 1]
             z_sat = R[:, 2]
@@ -242,5 +242,3 @@ class EarthReference(BaseReference):
         self.state.rot = Rotation.from_matrix(np.column_stack((x,y,z)))
 
         return self.state
-
-

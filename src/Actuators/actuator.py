@@ -13,7 +13,6 @@ from abc import abstractmethod
 from typing import Optional, Union, Iterable, List
 import yaml
 from collections import defaultdict, deque
-# Assuming BaseAnimation is imported from a relevant module
 from animation import BaseAnimation
 
 
@@ -56,7 +55,7 @@ class Actuator:
         ----------
         axis : :class:`numpy.ndarray`, optional
             The direction of the actuator's output in the body frame, shape (3,).
-            If None, defaults to $\mathbf{x} = [1.0, 0.0, 0.0]$.
+            If None, defaults to :math:`\\mathbf{x} = [1.0, 0.0, 0.0]`.
         """
         # Normalize the axis
         self.axis = np.array([1.0, 0.0, 0.0]) if axis is None else axis / np.linalg.norm(axis)
@@ -129,7 +128,7 @@ class Actuator:
         """
         Limits a given value to be within a specified range [minimum, maximum].
 
-        If maximum or minimum are not provided, they default to $\pm \infty$.
+        If maximum or minimum are not provided, they default to :math:`\\pm \\infty`.
 
         Parameters
         ----------
@@ -219,7 +218,7 @@ PLOTTING_PARAMETES = {
         # "title": "Reaction Wheel",
         "linestyle": "-",
         "x_label": "Time (s)",
-        "y_label": r"$\omega$ ($\frac{rad}{s}$)",
+        "y_label": r"$\dot{\omega}$ ($\frac{rad}{s^2}$)",
         "y_lim": (0, 1.0),
         "grid": True,
         "legend": False
@@ -337,4 +336,3 @@ class ActuatorAnimation(BaseAnimation):
 
 if __name__ == "__main__":
     pass
-
