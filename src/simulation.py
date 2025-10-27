@@ -1,3 +1,4 @@
+from typing import Callable, Union
 import numpy as np
 from scipy.spatial.transform import Rotation
 import misc
@@ -32,19 +33,19 @@ class PhysicalState:
         """
         self.rot = Rotation.random()
 
-def randomize_angular_velocity(self, w: float = 1.0):
-        """
-        Randomizes the angular velocity vector :math: `\mathbf{\omega}` with uniform
-        distribution between :math:`-\omega` and :math:`\omega` rad/s for each component.
+    def randomize_angular_velocity(self, w: float = 1.0):
+            """
+            Randomizes the angular velocity vector :math: `\mathbf{\omega}` with uniform
+            distribution between :math:`-\omega` and :math:`\omega` rad/s for each component.
 
-        Parameters
-        ----------
-        w : float, optional
-            The maximum absolute value for the angular velocity components
-            in rad/s. The range will be :math:`[-\omega, \omega]`.
-            Defaults to 1.0.
-        """
-        self.w = np.random.uniform(-w, w, 3)
+            Parameters
+            ----------
+            w : float, optional
+                The maximum absolute value for the angular velocity components
+                in rad/s. The range will be :math:`[-\omega, \omega]`.
+                Defaults to 1.0.
+            """
+            self.w = np.random.uniform(-w, w, 3)
 
     def __str__(self) -> str:
         """
@@ -176,6 +177,29 @@ class Simulate:
         return x
 
     @staticmethod
+    def rk4(f: Callable[[np.ndarray, Union[float, np.floating]], np.ndarray],
+            x: np.ndarray,
+            t: Union[float, np.floating]=0.0,
+            dt: Union[float, np.floating]=0.1):
+        """
+        Implementation of the Runge-Kutta algorithm for numerical integration.
+        Replaces Direct Euler integration. For information of how the integration
+        scheme works, see: https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
+        """
+        assert dt > 0.0
+        x_k = x.copy()
+
+        k1 = f(x_k, 0.0) * dt
+        k2 = f(x_k + 0.5 * k1, t + 0.5 * dt) * dt
+        k3 = f(x_k + 0.5 * k2, t + 0.5 * dt) * dt
+        k4 = f(x_k + k3, t + dt) * dt
+
+        weighted_sum = k1 + 2.0 * k2 + 2.0 * k3 + k4
+        x_next = x_k + (1.0 / 6.0) * weighted_sum
+
+        return x_next
+
+    @staticmethod
     def quaternion_derivate(q: np.ndarray, w: np.ndarray):
         """
         Calculation of the time derivative of a quaternion :math: `\mathbf{\dot{q}}`
@@ -195,7 +219,7 @@ class Simulate:
     @staticmethod
     def calculate_attitude(rot: Rotation, w: np.ndarray, dt: float):
         """
-        Calculates the updated attitude (rotation) using a simple Euler
+        Calculates the updated attitude (rotation) using a RK4
         integration of the quaternion derivative :math: `\mathbf{\dot{q}} = \frac{1}{2} \mathbf{q} \otimes [0, \mathbf{\omega}]^T`.
 
         Parameters
@@ -223,12 +247,16 @@ class Simulate:
         # return Rotation.from_quat(q)
 
         q = rot.as_quat()
-        q_dot = Simulate.quaternion_derivate(q, w)
-        q_k = Simulate.direct_euler(q, q_dot, dt)
+        q_k = Simulate.rk4(
+            f=lambda x, t: Simulate.quaternion_derivate(x, w),
+            x=q
+        )
         return Rotation.from_quat(q_k)
 
     @staticmethod
     def quaternion_integration_taylor_expansion(Q: np.ndarray, w: np.ndarray, dt: float):
+        # WARN: This implementation does not currently produce expected results. 
+        # DO NOT USE !!!
         """
         Calculates the updated attitude using a specific Taylor expansion based
         quaternion integration method.
@@ -285,10 +313,11 @@ class Simulate:
         :class:`PhysicalState`
             The updated physical state object.
         """
-        state.w_dot = Simulate.calculate_angular_accelleration(L, state.w, J)
-        state.w = Simulate.direct_euler(state.w, state.w_dot, dt)
+        state.w = Simulate.rk4(
+            f=lambda x, t: Simulate.calculate_angular_accelleration(L, x, J),
+            x=state.w
+        )
         state.rot = Simulate.calculate_attitude(state.rot, state.w, dt)
-        # state.rot = Simulate.quaternion_integration_taylor_expansion(state.rot.as_quat(), state.w, dt)
         return state
 
 
