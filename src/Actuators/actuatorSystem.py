@@ -6,13 +6,11 @@ individual actuators (like Reaction Wheels and Magnetorquers) and implements
 the logic for torque distribution and reaction wheel desaturation.
 """
 
-from matplotlib.pyplot import axis
 import numpy as np
-from Actuators.actuator import Actuator, ActuatorAnimation
+from Actuators.actuator import Actuator
 from Actuators.reactionwheel import ReactionWheel
 from Actuators.magnetorquer import Magnetorquer
-from animation import BaseAnimation
-from typing import List, MutableSequence, Sequence, Optional, Type
+from typing import List, Sequence, Optional
 
 import misc
 
@@ -86,9 +84,6 @@ class ActuatorSystem:
 
         self.A_mqt = np.array([x.axis for x in self.magnetorquers]).T
         self.A_mqt_inv = np.linalg.pinv(self.A_mqt)
-
-
-    # TODO: Implement desaturation of reaction wheels
 
     @classmethod
     def init_base_rw_system(cls):
@@ -326,78 +321,56 @@ class ActuatorSystem:
             The net torque applied to the satellite body :math:`\\mathbf{\\tau}_{ext}` 
             in the body frame, shape (3,).
         """
-
         # Get the necessary parameters for desaturation
-        b0 = kwargs.get("b0", np.array([0.0, 0.0, 1.0]))
+        b0 = kwargs.get("b0", np.array([0.0, 0.0, 1.0]))        # Inertial frame
         omega = kwargs.get("w", np.zeros(3))
         w_ref = kwargs.get("w_ref", 1.0)
         R = kwargs.get("R", np.eye(3))
         kp = kwargs.get("kp", 1.0)
 
-        # b0 = -R @ b
-
         # Calculate the magnetorquer actuation
         tau_m = self.desaturate(b0, R, w_ref, kp)
-        
+
         # Magnetic field in the body frame
         B_body = R @ b0
-        
+
         # Calculate the required dipole moment vector L for the magnetorquers
-        # Note: L here is the vector of required scalar dipole magnitudes (m_i) along each magnetorquer's axis, 
-        # NOT the applied torque vector. Renaming to m_vec for clarity in this context.
+        # NOTE: L here is the vector of required scalar dipole magnitudes 
+        # (m_i) along each magnetorquer's axis, NOT the applied torque vector. 
+        # Renaming to m_vec for clarity in this context.
         m_vec = self.distribute_torque_mqt(tau_m, b=B_body)
-        
+
         # Calculate the actual total magnetic torque T_m applied to the body
-        T_m = np.zeros(3)
-        for mqt, m_i in zip(self.magnetorquers, m_vec):
-            # The applied magnetic torque is T_m = m x B_body, where m = m_i * mqt.axis
-            T_m += np.cross(m_i * mqt.axis, B_body)
+        T_m = np.cross(m_vec, B_body)
 
-
-        # Calculate the reaction wheel actuation
-        hw = self.angular_momentum_wheels()
-        
         # Commanded torque to the reaction wheels: tau_w = -w x hw + T_m - u
         # where T_m is the torque from the magnetorquers.
+        hw = self.angular_momentum_wheels()
         tau_w = -misc.skew(omega) @ hw + T_m - u
-        
-        # The total applied torque from the reaction wheels, L_w (which is -d(h_w)/dt)
-        # Note: distribute_torque_rw calculates -d(h_w)/dt, which is the torque applied *to the body*.
-        # The internal reaction wheel command is a torque $\mathbf{u}_{wheels}$, which causes a change in $h_w$
-        # such that $\mathbf{\tau}_w = \mathbf{A} \mathbf{u}_{wheels}$. The torque *applied to the body* is 
-        # $\mathbf{L}_{rw} = - \mathbf{\tau}_w$.
-        # However, the distribute_torque_rw function returns the sum of $\mathbf{a}_i \tau_i$, which is 
-        # the $\mathbf{\tau}_w$ commanded by the controller. Let's assume L_w is $\mathbf{\tau}_w$ for now.
-        # But for the final calculation, we need $\mathbf{L}_{rw} = - \mathbf{\tau}_w$.
-        # Reverting to the expected physics where the function returns the torque applied to the body, $L_{rw}$.
-        # L_w is the commanded torque to the body from the wheels, $\mathbf{A} \mathbf{u}_{wheels}$.
-        # L_w in the code is $\mathbf{\tau}_w$
-        L_w_commanded = self.distribute_torque_rw(tau_w)
 
-        # Final total torque on the satellite body: 
-        # L_total = L_rw + T_m + L_gyro
-        # where L_rw = -d(h_w)/dt, L_gyro = -w x h_w
-        # The term L_w_commanded calculated above is $\mathbf{A} \mathbf{u}_{wheels}$ which is the $\mathbf{\tau}_{w}$
-        # command from the control law. The actual torque applied to the body is $\mathbf{L}_{rw} = - \mathbf{\tau}_{w}$
-        # $\mathbf{L} = \mathbf{L}_{rw} + \mathbf{T}_m - \mathbf{\omega} \times \mathbf{h}_w$
-        # $\mathbf{L} = -\mathbf{\tau}_{w} + \mathbf{T}_m - \mathbf{\omega} \times \mathbf{h}_w$
-        
-        # Substituting tau_w from the control law:
-        # $\mathbf{L} = - (-\mathbf{\omega} \times \mathbf{h}_w + \mathbf{T}_m - \mathbf{u}) + \mathbf{T}_m - \mathbf{\omega} \times \mathbf{h}_w$
-        # $\mathbf{L} = \mathbf{\omega} \times \mathbf{h}_w - \mathbf{T}_m + \mathbf{u} + \mathbf{T}_m - \mathbf{\omega} \times \mathbf{h}_w$
-        # $\mathbf{L} = \mathbf{u}$ (The controller output $\mathbf{u}$ is the intended net torque on the body)
+        # Distribute tau_w over the rws to the best of the systems ability
+        L_w = self.distribute_torque_rw(tau_w)
 
-        # The implementation in the original code, however, uses the formula:
-        # return -L_w + T_m - misc.skew(omega) @ hw
-        # Assuming L_w is the applied wheel torque $\mathbf{A} \mathbf{u}_{wheels} = \mathbf{\tau}_w$.
-        # $\mathbf{L} = - \mathbf{\tau}_w + \mathbf{T}_m - (\mathbf{\omega} \times \mathbf{h}_w)$
-        # $\mathbf{L} = - L\_w\_commanded + \mathbf{T}_m - \mathbf{\omega} \times \mathbf{h}_w$ (which is correct for the applied physics)
-        
-        # Let's trust the logic where $L\_w\_commanded$ is the magnitude of $\dot{h}_w$ change.
-        # $L\_w\_commanded = \mathbf{\tau}_w$. The net torque is $L_{net} = -\mathbf{\tau}_w + \mathbf{T}_m + \mathbf{L}_{gyro}$
-        # where $\mathbf{L}_{gyro} = -\mathbf{\omega} \times \mathbf{h}_w = -misc.skew(omega) @ hw$
+        # The torque applied to the satellite body is the torque from: 
+        #   - reaction wheels (L_w)
+        #   - magnetorquers (T_m)
+        #   - gyroscopic precession (?) (misc.skew(omega) @ hw)
+        return -L_w + T_m - misc.skew(omega) @ hw
 
-        return -L_w_commanded + T_m - misc.skew(omega) @ hw
+    def update_actuators(self):
+        """
+        Function called whenever an actuator is added or removed. This
+        function is responsible for remaking the lists of reactionwheels
+        and magnetorquers, and remake their actuation distribution 
+        matrices.
+        """
+        self.reaction_wheels: List[ReactionWheel] = [x for x in self.actuators if isinstance(x, ReactionWheel)]
+        self.A = np.array([x.axis for x in self.reaction_wheels]).T
+        self.A_inv = np.linalg.pinv(self.A)
+
+        self.magnetorquers: List[Magnetorquer] = [x for x in self.actuators if isinstance(x, Magnetorquer)]
+        self.A_mqt = np.array([x.axis for x in self.magnetorquers]).T
+        self.A_mqt_inv = np.linalg.pinv(self.A_mqt)
 
     def reset(self):
         """

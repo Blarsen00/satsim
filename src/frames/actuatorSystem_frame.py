@@ -1,17 +1,15 @@
 from copy import deepcopy
 import tkinter as tk
-from tkinter import StringVar, ttk, filedialog
+from tkinter import StringVar
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from collections import defaultdict
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List
 
-from Actuators.actuator import Actuator, PLOTTING_PARAMETES, ActuatorAnimation
+from Actuators.actuator import Actuator
 from Actuators.actuatorSystem import ActuatorSystem
-from animation import BaseAnimation
 from frames.base_frame import BaseParamFrame
 from frames.actuator_frames import create_actuator_frame, ACTUATOR_FRAME_MAP
 from misc import test_page
@@ -41,37 +39,69 @@ class ActuatorSystemFrame(tk.Frame):
         """
         super().__init__(parent)
         self.actuator_system = actuator_system if actuator_system is not None else ActuatorSystem()
-        
+
+        self.init_frames()
+
+        self.init_vars()
+        self.draw_frame()
+
+    def init_vars(self, actuator_sys: Optional[ActuatorSystem]=None):
+        """
+        Sets the dictionaries `self.vars_rw` and `self.vars_mqt` with 
+        `tk.StringVar` that are responsible for displaying the correct 
+        data from the actuator. The key for the dictionary is the names
+        in the data dictionary of the actuator, excluding time.
+        """
+        if actuator_sys is None:
+            sys: ActuatorSystem = self.actuator_system
+        else:
+            sys: ActuatorSystem = actuator_sys
+
         # Initialize StringVars for Reaction Wheel (RW) data display
         self.vars_rw: List[Dict[str, StringVar]]= [
             {key: tk.StringVar(value=act.data[key][-1]) for key in act.data.keys() if key != "time"} 
-            for act in self.actuator_system.reaction_wheels
+            for act in sys.reaction_wheels
         ]
-        
+
         # Initialize StringVars for Magnetorquer (MQT) data display
         self.vars_mqt: List[Dict[str, StringVar]]= [
             {key: tk.StringVar(value=act.data[key][-1]) for key in act.data.keys() if key != "time"} 
-            for act in self.actuator_system.magnetorquers
+            for act in sys.magnetorquers
         ]
 
-        self.draw_frame()
+    def init_frames(self):
+        """
+        Divide the frame into a value frame - which displays the live
+        values for some key quantities like angular rate for rws - and
+        a plot frame which displays 
+
+        """
+        # Display frames
+        self.value_frame: tk.Frame = tk.Frame(self)
+        self.rw_frame: tk.Frame = tk.Frame(self.value_frame)
+        self.mqt_frame: tk.Frame = tk.Frame(self.value_frame)
+
+        # Plot frames
+        self.plot_frame: tk.Frame = tk.Frame(self)
+
+        self.plot_frame.pack(side="left", fill="x", padx=1, pady=1)
+        self.value_frame.pack(side="left", fill="x", padx=1, pady=1)
+
+        self.rw_frame.grid(row=0, column=0, sticky="n")
+        self.mqt_frame.grid(row=0, column=1, sticky="n")
+
 
     def draw_frame(self):
         """
         Sets up the main layout of the frame, partitioning space for
         actuator values and future plots.
         """
-        value_frame = tk.Frame(self)
-        plot_frame = tk.Frame(self)
 
-        value_frame.pack(side="left", fill="x", padx=1, pady=1)
-        plot_frame.pack(side="left", fill="x", padx=1, pady=1)
-
-        self.draw_actuators(value_frame)
+        self.draw_actuators(self.value_frame)
 
         # WARN: draw_plots functionality does not exist anymore, but might make a comback 
         # at some point
-        # self.draw_plots(value_frame)
+        # self.draw_plots(self.plot_frame)
 
     def draw_plots(self, frame: tk.Frame):
         """
@@ -120,7 +150,10 @@ class ActuatorSystemFrame(tk.Frame):
         frame : tk.Frame
             The parent frame where actuator information should be placed.
         """
+        self.draw_rw_frame(self.rw_frame)
+        self.draw_mqt_frame(self.mqt_frame)
 
+    def draw_rw_frame(self, frame: tk.Frame):
         for i, act in enumerate(self.actuator_system.reaction_wheels):
             rw_frame = tk.Frame(frame)
             rw_frame.grid(row=i+1, column=0, padx=5, pady=2)
@@ -140,6 +173,7 @@ class ActuatorSystemFrame(tk.Frame):
             div = tk.Frame(rw_frame, bg="black")
             div.pack(side="top", fill="x", pady=2)
 
+    def draw_mqt_frame(self, frame: tk.Frame):
         for i, mqt in enumerate(self.actuator_system.magnetorquers):
             mqt_frame = tk.Frame(frame)
             mqt_frame.grid(row=i+1, column=1, sticky="n", padx=5, pady=2)
@@ -158,7 +192,6 @@ class ActuatorSystemFrame(tk.Frame):
 
             div = tk.Frame(mqt_frame, bg="black")
             div.pack(side="top", fill="x", pady=2)
-
 
     def update_values(self):
         """
@@ -181,6 +214,22 @@ class ActuatorSystemFrame(tk.Frame):
                 value = act.data[key][-1]
                 txt = "{:.7f}".format(value)
                 self.vars_mqt[i][key].set(txt)
+
+    def reset_display(self):
+        """
+        Whenever the actuatorsystem is modified by adding or removing 
+        actuators, then some or all of the `tk.StringVar` variables
+        used to display the data does not have a corresponding actuator, 
+        and thus the display gets wrong. This function will reset the
+        frame to reflect the changes made to the actuator system by 
+        remaking the vars and frame.
+        """
+        for widget in self.winfo_children():
+            widget.destroy()
+
+        self.init_frames()
+        self.init_vars()
+        self.draw_frame()
 
     @staticmethod
     def create_actuator_menu(frame: tk.Frame,
@@ -415,6 +464,7 @@ class ActuatorSystemParameterFrame(tk.Frame):
             The index of the actuator to remove.
         """
         del self.sys.actuators[n]
+        self.sys.update_actuators()
         self.redraw()
 
     def add_actuator(self, *args):
@@ -473,6 +523,7 @@ class ActuatorSystemParameterFrame(tk.Frame):
         else: 
             self.sys.actuators.append(act)
 
+        self.sys.update_actuators()
         popup.destroy()
         self.redraw()
 
@@ -504,6 +555,7 @@ class ActuatorSystemParameterFrame(tk.Frame):
         ActuatorSystem
             The configured ActuatorSystem.
         """
+        self.sys.update_actuators()
         return self.sys
 
 

@@ -5,14 +5,10 @@ This module defines the ReactionWheel class, a type of Actuator used for
 attitude control through momentum exchange.
 """
 import numpy as np
-from Actuators.actuator import Actuator, ActuatorAnimation
+from Actuators.actuator import Actuator
 import matplotlib.pyplot as plt
-from matplotlib.artist import Artist
-import matplotlib.patches as mpatch
-from typing import Optional, Tuple, Iterable
+from typing import Optional, Tuple
 
-from animation import BaseAnimation
-from collections import deque
 
 class ReactionWheel(Actuator):
     """ 
@@ -93,8 +89,8 @@ class ReactionWheel(Actuator):
         self.log_data("torque", 0)
         self.log_data("reference", 0)
         self.log_data("I", 0)
-        self.log_data("motor", 0)
-        self.log_data("drag", 0)
+        # self.log_data("motor", 0)
+        # self.log_data("drag", 0)
         self.log_data("w", 0)
         self.log_data("rpm", 0)
         # self.log_data("w_dot", 0)
@@ -263,29 +259,17 @@ class ReactionWheel(Actuator):
         motor, I = self.motor_torque(tau + drag, self.km, self.max_I, dt)
 
         self.log_data("I", I)
-        self.log_data("motor", motor)
-        self.log_data("drag", drag)
+        # self.log_data("motor", motor)
+        # self.log_data("drag", drag)
 
         T = motor - drag
 
-        # Update the state of the wheel
-        # The equation of motion for the wheel is J * dw/dt = T_motor - T_drag
-        # T_net = T_motor - T_drag = T
-        # dw/dt = J_inv * T_net_vector
-        # The wheel rotates only about its axis, so the net torque vector is T * axis.
-        # The change in angular velocity vector is dw = J_inv @ (T * axis).
-        # We only care about the magnitude of the angular velocity change along the axis.
         tau_vec = T * self.axis
         dw = self.J_inv @ tau_vec
-        # The change in the scalar angular speed w is the component of dw along the axis:
         w_diff = dt * np.dot(self.axis, dw) 
         self.w += w_diff
 
-        # The torque applied by the wheel on the body is $-\mathbf{\tau}_{\text{net}}$ along the axis.
-        # Since T is the scalar magnitude of $\mathbf{\tau}_{\text{net}}$, the scalar magnitude of 
-        # the reaction torque $\mathbf{\tau}_{\text{reaction}} = -\mathbf{\tau}_{\text{net}}$ is also T.
-        # This function should return the magnitude of the torque applied to the body.
-        return -T # $\tau_{\text{body}} = -\tau_{\text{wheel}}$
+        return T
 
     def apply_torque(self, tau: float, dt: float=0.1, **kwargs) -> float:
         """
@@ -375,8 +359,8 @@ def test_drag():
     # max_motor_torque = rw.km * rw.max_I 
     # ax.axhline(max_motor_torque, color="r", linestyle="--") 
     ax.set_title('Drag Torque vs. Angular Velocity')
-    ax.set_xlabel('Angular Velocity $\omega$ (rad/s)')
-    ax.set_ylabel('Drag Torque $\\tau_{\\text{drag}}$ (Nm)')
+    ax.set_xlabel(r'Angular Velocity $\omega$ (rad/s)')
+    ax.set_ylabel(r'Drag Torque $\\tau_{\\text{drag}}$ (Nm)')
     ax.grid(True)
     
     plt.tight_layout() # Improves spacing between subplots
