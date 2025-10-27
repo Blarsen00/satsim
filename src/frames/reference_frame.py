@@ -1,15 +1,13 @@
 import tkinter as tk
 
-from scipy.spatial.transform import Rotation
 from reference import BaseReference
 from simulation import PhysicalState
 from misc import test_page
 
 from frames.base_frame import BaseParamFrame
-from frames.satellite_frame import SatelliteParamFrame
 
-from typing import Dict, Optional, Any
-from dataclasses import fields, asdict
+from typing import Optional, Any
+from dataclasses import asdict
 
 class ReferenceFrame(BaseParamFrame):
     """

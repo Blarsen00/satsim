@@ -1,6 +1,5 @@
 import tkinter as tk
 from tkinter import filedialog
-import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -8,9 +7,7 @@ from functools import partial
 from typing import Optional
 
 from frames.actuatorSystem_frame import ActuatorSystemFrame
-from Actuators.actuatorSystem import ActuatorSystem
-from attitude import AttitudeAnimation, create_simulation
-from animation import Animator
+from attitude import AttitudeAnimation
 from frames.satellite_frame import SatelliteFrame
 from misc import test_page
 

@@ -1,23 +1,18 @@
 import tkinter as tk
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 import matplotlib.pyplot as plt
 
 # Simulation
-from Actuators.actuatorSystem import ActuatorSystem
 from attitude import AttitudeAnimation, create_simulation
-from controller import Controller, PDController
-from frames.actuatorSystem_frame import ActuatorSystemFrame, ActuatorSystemParameterFrame
+from frames.actuatorSystem_frame import ActuatorSystemParameterFrame
 from frames.satellite_frame import SatelliteParamFrame
-from reference import BaseReference
-from simulation import PhysicalState
 
 # Frames
-from frames.base_frame import BaseParamFrame
-from frames.attitude_frame import TimeParameters
+from frames.time_frame import TimeParameters
 from frames.simulation_frame import SimulationFrame
 from frames.reference_frame import ReferenceFrame
 from frames.controller_frame import ControllerFrame
-from frames.plotting_frame import AniParamFrame
+from frames.time_frame import TimeParamFrame
 
 
 class App(tk.Tk):
@@ -69,7 +64,7 @@ class App(tk.Tk):
             "Reference": ReferenceFrame(self.container, self.ani_obj.ref),
             "Satellite": SatelliteParamFrame(self.container, self.ani_obj.sat),
             "Actuators": ActuatorSystemParameterFrame(self.container, self.ani_obj.sat.actuator_system),
-            "Params" : AniParamFrame(self.container, TimeParameters())
+            "Params" : TimeParamFrame(self.container, TimeParameters())
         }
 
         self.init_menu()
@@ -146,6 +141,15 @@ class App(tk.Tk):
         # Rebuild the satellite object and assign its actuator system
         self.ani_obj.sat = self.frames["Satellite"].get_obj()
         self.ani_obj.sat.actuator_system = self.frames["Actuators"].get_obj()
+
+        print("-------------------- Actuator system --------------------")
+        print(self.ani_obj.sat.actuator_system)
+        print("-------------------------------------------------------------------")
+
+        # Update the actuator system for the display frame for the actuator system and redraw it
+        self.frames["Simulation"].act_sys_frame.actuator_system = self.ani_obj.sat.actuator_system
+        self.frames["Simulation"].act_sys_frame.reset_display()
+
 
 
 class ControlFrame(tk.Frame):

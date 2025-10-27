@@ -1,37 +1,9 @@
 from matplotlib.artist import Artist
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from functools import partial
 
-from typing import List, Optional, Iterable, Sequence
+from typing import List, Iterable, Sequence
 from abc import abstractmethod, ABC
-from dataclasses import dataclass
-
-
-@dataclass
-class TimeParameters:
-    """
-    Data class to hold time-related parameters for simulation and animation.
-
-    Attributes
-    ----------
-    t0 : float, optional
-        Start time for the simulation, in seconds. Defaults to 0.0.
-    t_end : float, optional
-        End time for the simulation, in seconds. Defaults to 20.0.
-    dt : float, optional
-        Time step (delta time) for the simulation/integration, in seconds.
-        Defaults to 0.05.
-    interval : int, optional
-        Refresh rate for the :class:`matplotlib.animation.FuncAnimation`
-        in milliseconds (ms). Defaults to 40.
-    """
-    t0: float = 0.0
-    t_end: float = 20.0
-    dt: float = 0.05
-    interval: int = 40
-
+from frames.time_frame import TimeParameters
 
 class BaseAnimation(ABC):
     """

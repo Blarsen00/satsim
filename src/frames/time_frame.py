@@ -1,14 +1,36 @@
 import tkinter as tk
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import Optional, Any
 
-from frames.attitude_frame import TimeParameters
 from frames.base_frame import BaseParamFrame
-
 from misc import test_page
 
 
-class AniParamFrame(BaseParamFrame):
+@dataclass
+class TimeParameters:
+    """
+    Data class to hold time-related parameters for simulation and animation.
+
+    Attributes
+    ----------
+    t0 : float, optional
+        Start time for the simulation, in seconds. Defaults to 0.0.
+    t_end : float, optional
+        End time for the simulation, in seconds. Defaults to 20.0.
+    dt : float, optional
+        Time step (delta time) for the simulation/integration, in seconds.
+        Defaults to 0.05.
+    interval : int, optional
+        Refresh rate for the :class:`matplotlib.animation.FuncAnimation`
+        in milliseconds (ms). Defaults to 40.
+    """
+    t0: float = 0.0
+    t_end: float = 20.0
+    dt: float = 0.05
+    interval: int = 40
+
+
+class TimeParamFrame(BaseParamFrame):
     def __init__(self, parent, time_param: Optional[TimeParameters]=None):
         self.time_param: TimeParameters = TimeParameters() if time_param is None else time_param
         self.param = asdict(self.time_param)
@@ -36,4 +58,4 @@ class AniParamFrame(BaseParamFrame):
 
 if __name__ == '__main__':
     root = tk.Tk()
-    test_page(root, AniParamFrame(root))
+    test_page(root, TimeParamFrame(root))

@@ -1,15 +1,13 @@
 from copy import deepcopy
 import tkinter as tk
-from typing import Dict, Optional, Any, Type, Union
+from typing import Dict, Optional, Type, Union
 from Actuators.actuator import Actuator
 from Actuators.magnetorquer import Magnetorquer
 from frames.base_frame import BaseParamFrame
 from Actuators.reactionwheel import ReactionWheel, make_reactionwheel_plot
 from misc import test_page
-from scipy.spatial.transform import Rotation
 
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 

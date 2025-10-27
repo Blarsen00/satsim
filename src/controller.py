@@ -2,8 +2,6 @@ import numpy as np
 import misc
 from simulation import PhysicalState
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, is_dataclass, field
-from typing import List
 
 
 class Controller(ABC):

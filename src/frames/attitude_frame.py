@@ -1,9 +1,8 @@
 import tkinter as tk
-from tkinter import ttk, filedialog
 
 from dataclasses import asdict, dataclass, field
 from frames.base_frame import BaseParamFrame
-from animation import TimeParameters
+from time_frame import TimeParameters
 
 from typing import List, Optional, Any
 

@@ -1,8 +1,6 @@
 import tkinter as tk
-from tkinter import ttk
 from scipy.spatial.transform import Rotation
 from abc import abstractmethod
-from dataclasses import dataclass, field, fields, is_dataclass
 from typing import List, Optional, Dict, Any
 import numpy as np
 

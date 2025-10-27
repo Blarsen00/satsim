@@ -1,7 +1,6 @@
 from dataclasses import asdict
 import tkinter as tk
 from typing import Optional, Any
-import numpy as np
 from attitude import AttitudeAnimation
 from misc import test_page
 
