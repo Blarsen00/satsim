@@ -43,12 +43,10 @@ class PhysicalState:
 ```
 
 The dynamic equations in the body-fixed frame is as follows:
-$$
 \begin{align}
     \nonumber J\dot\omega + \omega^\times (J\omega + h_\omega) &= -\tau_\omega + T_m \\
     \dot h_\omega &= \tau_w
 \end{align}
-$$
 
 Where $T_m$ is the magnetic torque produced by the magnetorquers, and $\tau_w$ is the torque provided by the reaction wheels.
 
