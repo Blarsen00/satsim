@@ -95,18 +95,13 @@ class Magnetorquer(Actuator):
         :class:`numpy.ndarray`
             The resulting torque vector :math:`\\mathbf{\\tau}` in the body frame, shape (3,).
         """
-        # The internal attribute self.m is not defined, relying on the 'm' parameter
-        # Correcting the logic to work with the provided parameters
         if m is None:
-            # Assuming that if m is None, there is a current dipole magnitude to be used, 
-            # though typically in this setup the value is passed in 'm'.
-            # Since self.m is not defined, we'll fall back to 0.0 to prevent crash.
             m_vector = 0.0 * self.axis 
+
         elif isinstance(m, (float, np.floating, int)):
-            # Scalar magnitude provided, use actuator axis
             m_vector = self.axis * m
-        else: # Assumed np.ndarray
-            # Vector provided
+
+        else:
             m_vector = m
 
         return np.cross(m_vector, B)

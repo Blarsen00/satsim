@@ -17,7 +17,7 @@ EarthReference
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from dataclasses import is_dataclass, fields
+from dataclasses import fields
 from simulation import Simulate, PhysicalState
 
 
@@ -65,9 +65,10 @@ class BaseReference:
         :class:`simulation.PhysicalState`
             The updated reference physical state.
         """
-        self.state.w = Simulate.direct_euler(self.state.w, 
-                                             self.state.w_dot,
-                                             dt)
+        self.state.w = Simulate.rk4(
+            f=lambda x, t: self.state.w_dot,
+            x=self.state.w
+        )
         self.state.rot = Simulate.calculate_attitude(self.state.rot,
                                                      self.state.w,
                                                      dt)
