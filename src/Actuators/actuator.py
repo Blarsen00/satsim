@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from abc import abstractmethod
 from typing import Optional, Union, Iterable, List
-import yaml
 from collections import defaultdict, deque
 from animation import BaseAnimation
 
@@ -36,7 +35,7 @@ class Actuator:
     name : str
         A descriptive name for the actuator type.
     param : dict
-        A dictionary storing parameters loaded from an external source (e.g., YAML file).
+        A dictionary storing parameters loaded from an external source .
     data : :class:`collections.defaultdict` of :class:`collections.deque`
         A container for logging historical data (e.g., commanded torque, time). 
         The deques have a maximum length set by :attr:`history_size`.
@@ -75,21 +74,6 @@ class Actuator:
             The data value to record.
         """
         self.data[key].append(value)
-
-    def load_from_yaml(self, filepath: str):
-        """
-        Loads actuator parameters from a YAML file.
-
-        The loaded parameters are stored in :attr:`param`.
-
-        Parameters
-        ----------
-        filepath : str
-            The path to the YAML configuration file.
-        """
-        with open(filepath, 'r') as file:
-            self.param = yaml.safe_load(file)
-        file.close()
 
     @abstractmethod
     def apply_torque(self, tau: float, dt: float=0.1, **kwargs) -> float:

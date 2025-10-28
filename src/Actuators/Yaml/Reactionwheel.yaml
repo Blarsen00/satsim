@@ -1,8 +1,0 @@
-inertia_wheel: 1.0
-viscous_damping: 1.0e-7
-coloumb_damping: 1.0e-4
-w0: 0.0
-# max_rpm: 10
-# max_tau: 0.5
-max_rpm: 6500
-max_tau: 3.2e-3
